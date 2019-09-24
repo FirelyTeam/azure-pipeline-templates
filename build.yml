@@ -1,0 +1,30 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: build.yml
+
+parameters:
+  # Default values
+  packageArtifacts: false
+  vmImage: 'ubuntu 16.04'
+
+jobs:
+- job: Build
+  name: $(SourceBranchName)-$(Date:yyyyMMdd)$(Rev:-r)
+  pool:
+    vmImage: ${{ parameters.vmImage }}
+  steps:
+  - task: DotNetCoreInstaller@2 
+    inputs:
+      version: '2.2.107' 
+
+  - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(build.buildNumber) /warnaserror
+    displayName: 'dotnet build $(buildConfiguration)'
+
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet test UnitTests'
+    inputs:
+      command: test
+      projects: '**/*Tests/*Tests.csproj'
+      arguments: '--configuration $(buildConfiguration)'
+
+  - ${{ if eq(parameters.packageArtifacts, 'true') }}:
+    - template: package.yml
