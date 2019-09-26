@@ -5,11 +5,13 @@ parameters:
   # Default values
   packageArtifacts: false
   vmImage: 'ubuntu 16.04'
+  poolName: null
 
 jobs:
 - job: Build
   pool:
     vmImage: ${{ parameters.vmImage }}
+    name: ${{ parameters.poolName }}
   steps:
   - task: DotNetCoreInstaller@2 
     inputs:
