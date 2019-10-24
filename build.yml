@@ -5,7 +5,7 @@ parameters:
   # Default values
   packageArtifacts: false
   vmImage: 'ubuntu 16.04'
-  poolName: null
+  poolName: 
 
 jobs:
 - job: Build
