@@ -9,6 +9,7 @@ parameters:
 jobs:
 - job: Publish_plugin
   displayName: 'Publish plugin as an Universal Package'
+  dependsOn: Build
   pool: ${{ parameters.pool }}
   steps:
   - task: DotNetCoreInstaller@2 
