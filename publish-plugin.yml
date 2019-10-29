@@ -7,7 +7,8 @@ parameters:
   packageDescription: 
   
 jobs:
-- job: Publish plugin as an Universal Package
+- job: Publish_plugin
+  displayName: 'Publish plugin as an Universal Package'
   pool: ${{ parameters.pool }}
   steps:
   - task: DotNetCoreInstaller@2 
