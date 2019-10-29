@@ -27,8 +27,7 @@ jobs:
     displayName: 'Universal publish'
     inputs:
       command: publish
-      vstsFeed: 'Vonk.Data'
-      vstsPackageVersion: 3.1.1
       publishDirectory: '$(Build.ArtifactStagingDirectory)/plugin_output'
+      vstsFeedPublish: 'Vonk.Data'
       vstsFeedPackagePublish: ${{ parameters.packageName }}
       packagePublishDescription: ${{ parameters.packageDescription }}
