@@ -1,0 +1,33 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: publish-plugin.yml
+
+parameters:
+  pool: {}
+  packageName:
+  packageDescription: 
+  
+jobs:
+- job: Publish plugin as an Universal Package
+  pool: ${{ parameters.pool }}
+  steps:
+  - task: DotNetCoreInstaller@2 
+    inputs:
+      version: '2.2.107' 
+
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet build'
+    inputs:
+      projects: |
+       **\*.csproj
+       !**\*Tests.csproj
+      arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release '
+
+  - task: UniversalPackages@0
+    displayName: 'Universal publish'
+    inputs:
+      command: publish
+      vstsFeed: 'Vonk.Data'
+      vstsPackageVersion: 3.1.1
+      publishDirectory: '$(Build.ArtifactStagingDirectory)/plugin_output'
+      vstsFeedPackagePublish: ${{ parameters.packageName }}
+      packagePublishDescription: ${{ parameters.packageDescription }}
