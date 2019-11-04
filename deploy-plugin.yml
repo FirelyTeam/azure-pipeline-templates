@@ -1,0 +1,32 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: deploy-plugin.yml
+
+parameters:
+  pool: {}
+  packageName:
+  packageDescription: 
+  
+
+jobs:
+- job: Deploy_plugin
+  displayName: 'Deploy plugin to an Universal package'
+  dependsOn: Publish_plugin
+  pool: ${{ parameters.pool }}
+  strategy:
+    runOnce:
+      deploy:
+          steps:
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifactName: 'PluginArtifacts'
+              downloadPath: '$(System.ArtifactsDirectory)/PluginArtifacts'
+              
+          - task: UniversalPackages@0
+            displayName: 'Universal publish'
+            inputs:
+                command: publish
+                publishDirectory: '$(System.ArtifactsDirectory)/PluginArtifacts'
+                vstsFeedPublish: 'Vonk.Data'
+                vstsFeedPackagePublish: ${{ parameters.packageName }}
+                packagePublishDescription: ${{ parameters.packageDescription }}
+  
