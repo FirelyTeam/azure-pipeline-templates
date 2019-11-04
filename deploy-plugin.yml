@@ -8,10 +8,11 @@ parameters:
   
 
 jobs:
-- job: Deploy_plugin
+- deployment: Deploy_plugin
   displayName: 'Deploy plugin to an Universal package'
-  dependsOn: Publish_plugin
+  dependsOn: Build
   pool: ${{ parameters.pool }}
+  environment: 'plugin-deploy'
   strategy:
     runOnce:
       deploy:
