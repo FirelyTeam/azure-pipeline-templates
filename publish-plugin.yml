@@ -8,7 +8,7 @@ parameters:
   
 jobs:
 - job: Publish_plugin
-  displayName: 'Publish plugin as an Universal Package'
+  displayName: 'Publish plugin as an artifact'
   dependsOn: Build
   pool: ${{ parameters.pool }}
   steps:
@@ -23,12 +23,9 @@ jobs:
        **\*.csproj
        !**\*Tests.csproj
       arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release '
-
-  - task: UniversalPackages@0
-    displayName: 'Universal publish'
+      
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact: plugin'
     inputs:
-      command: publish
-      publishDirectory: '$(Build.ArtifactStagingDirectory)/plugin_output'
-      vstsFeedPublish: 'Vonk.Data'
-      vstsFeedPackagePublish: ${{ parameters.packageName }}
-      packagePublishDescription: ${{ parameters.packageDescription }}
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/plugin_output'
+      ArtifactName: 'PluginArtifacts'
