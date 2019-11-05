@@ -32,3 +32,6 @@ jobs:
 
   - ${{ if eq(parameters.packageArtifacts, 'true') }}:
     - template: package.yml
+      parameters:
+        useVersionSuffix: ${{ parameters.useVersionSuffix }}
+        
