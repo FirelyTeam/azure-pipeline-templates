@@ -1,0 +1,30 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: deploy-plugin-package.yml
+
+parameters:
+  pool: {}
+  nugetcredentials: 
+  
+
+jobs:
+- deployment: Deploy_plugin_package
+  displayName: 'Deploy plugin as an NuGet Package'
+  pool: ${{ parameters.pool }}
+  strategy:
+    runOnce:
+      deploy:
+          steps:
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifactName: 'NuGet Packages'
+              downloadPath: '$(System.ArtifactsDirectory)/NuGetArtifacts'
+
+
+          - task: NuGetCommand@2
+            displayName: 'MyGet push'
+            inputs:
+                command: push
+                packagesToPush: '$(System.ArtifactsDirectory)/NuGetArtifacts/*.nupkg'
+                nuGetFeedType: external
+                publishFeedCredentials: ${{ parameters.nugetcredentials }}
+                verbosityPush: Normal  
