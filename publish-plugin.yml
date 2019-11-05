@@ -3,6 +3,7 @@
 
 parameters:
   pool: {}
+  useVersionSuffix: true
   
 jobs:
 - job: Publish_plugin
@@ -15,13 +16,23 @@ jobs:
       version: '2.2.107' 
 
   - task: DotNetCoreCLI@2
-    displayName: 'dotnet build'
+    displayName: 'dotnet build with version suffix'
     inputs:
       projects: |
        **\*.csproj
        !**\*Tests.csproj
       arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release --version-suffix $(build.buildNumber)'
+    condition: and(succeeded(), eq('${{ parameters.useVersionSuffix }}', 'true'))
       
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet build'
+    inputs:
+      projects: |
+       **\*.csproj
+       !**\*Tests.csproj
+      arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release'
+    condition: and(succeeded(), eq('${{ parameters.useVersionSuffix }}', 'false'))
+
   - task: PublishBuildArtifacts@1
     displayName: 'Publish Artifact: plugin'
     inputs:

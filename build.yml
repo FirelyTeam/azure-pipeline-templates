@@ -3,6 +3,7 @@
 
 parameters:
   # Default values
+  useVersionSuffix: true
   packageArtifacts: false
   pool: {}
 
@@ -13,9 +14,14 @@ jobs:
   - task: DotNetCoreInstaller@2 
     inputs:
       version: '2.2.107' 
-
+      
   - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(build.buildNumber) /warnaserror
+    displayName: 'dotnet build $(buildConfiguration) with version suffix'
+    condition: and(succeeded(), eq('${{ parameters.useVersionSuffix }}', 'true'))
+
+  - script: dotnet build --configuration $(buildConfiguration) /warnaserror
     displayName: 'dotnet build $(buildConfiguration)'
+    condition: and(succeeded(), eq('${{ parameters.useVersionSuffix }}', 'false'))
 
   - task: DotNetCoreCLI@2
     displayName: 'dotnet test UnitTests'
