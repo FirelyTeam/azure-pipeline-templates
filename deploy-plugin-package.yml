@@ -10,6 +10,7 @@ jobs:
 - deployment: Deploy_plugin_package
   displayName: 'Deploy plugin as an NuGet Package'
   pool: ${{ parameters.pool }}
+  environment: 'plugin-deploy'
   strategy:
     runOnce:
       deploy:
