@@ -20,7 +20,7 @@ jobs:
       projects: |
        **\*.csproj
        !**\*Tests.csproj
-      arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release '
+      arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release --version-suffix $(build.buildNumber)'
       
   - task: PublishBuildArtifacts@1
     displayName: 'Publish Artifact: plugin'
