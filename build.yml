@@ -14,14 +14,13 @@ jobs:
   - task: DotNetCoreInstaller@2 
     inputs:
       version: '2.2.107' 
-      
-  - task: NuGetAuthenticate@0
-    displayName: 'MyGet Authenticate'
+
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet restore #3'
     inputs:
-      nuGetServiceConnections: MyGet
-  
-  - script: dotnet restore --source https://www.myget.org/F/vonk/api/v2/package
-    displayName: 'dotnet restore #2'
+      command: restore
+      feedsToUse: config
+      externalFeedCredentials: MyGet
       
   - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(build.buildNumber) /warnaserror
     displayName: 'dotnet build $(buildConfiguration) with version suffix'
