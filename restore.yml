@@ -1,0 +1,23 @@
+
+  
+steps:
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet new configfile'
+    inputs: 
+      command: custom
+      custom: new
+      arguments: nugetconfig
+      
+  - task: NuGetCommand@2
+    displayName: 'add MyGetSource'
+    inputs: 
+      command: custom
+      arguments: sources add  -name myget -Source https://www.myget.org/F/vonk/api/v2/package -configfile .\nuget.config
+    
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet restore #4'
+    inputs:
+      command: restore
+      nugetConfigPath: .\nuget.config
+      feedsToUse: config
+      externalFeedCredentials: MyGet
