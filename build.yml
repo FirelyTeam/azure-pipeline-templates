@@ -15,12 +15,8 @@ jobs:
     inputs:
       version: '2.2.107' 
       
-  - task: DotNetCoreCLI@2
-    displayName: 'dotnet restore'
-    inputs:
-      command: restore
-      projects: '*.sln'
-      vstsFeed: MyGet
+  - script: dotnet restore --source https://www.myget.org/F/vonk/api/v2/package
+    displayName: 'dotnet restore #2'
       
   - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(build.buildNumber) /warnaserror
     displayName: 'dotnet build $(buildConfiguration) with version suffix'
