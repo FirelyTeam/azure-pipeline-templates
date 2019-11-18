@@ -14,11 +14,24 @@ jobs:
   - task: DotNetCoreInstaller@2 
     inputs:
       version: '2.2.107' 
-
+      
   - task: DotNetCoreCLI@2
-    displayName: 'dotnet restore #3'
+    displayName: 'dotnet new configfile'
+    inputs: 
+      command: new
+      arguments: nugetconfig
+      
+  - task: NuGetCommand@2
+    displayName: 'add MyGetSource'
+    inputs: 
+      command: sources
+      arguments: add  -name myget -Source https://www.myget.org/F/vonk/api/v2/package -configfile .\nuget.config
+    
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet restore #4'
     inputs:
       command: restore
+      nugetConfigPath: .\nuget.config
       feedsToUse: config
       externalFeedCredentials: MyGet
       
