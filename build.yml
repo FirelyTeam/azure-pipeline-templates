@@ -18,8 +18,8 @@ jobs:
   - task: DotNetCoreCLI@2
     displayName: 'dotnet new configfile'
     inputs: 
-      command: new
-      arguments: nugetconfig
+      command: custom
+      arguments: new nugetconfig
       
   - task: NuGetCommand@2
     displayName: 'add MyGetSource'
