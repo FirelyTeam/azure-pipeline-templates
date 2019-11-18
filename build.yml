@@ -25,8 +25,8 @@ jobs:
   - task: NuGetCommand@2
     displayName: 'add MyGetSource'
     inputs: 
-      command: sources
-      arguments: add  -name myget -Source https://www.myget.org/F/vonk/api/v2/package -configfile .\nuget.config
+      command: custom
+      arguments: sources add  -name myget -Source https://www.myget.org/F/vonk/api/v2/package -configfile .\nuget.config
     
   - task: DotNetCoreCLI@2
     displayName: 'dotnet restore #4'
