@@ -15,6 +15,11 @@ jobs:
     inputs:
       version: '2.2.107' 
       
+  - task: NuGetAuthenticate@0
+    displayName: 'MyGet Authenticate'
+    inputs:
+      nuGetServiceConnections: MyGet
+  
   - script: dotnet restore --source https://www.myget.org/F/vonk/api/v2/package
     displayName: 'dotnet restore #2'
       
