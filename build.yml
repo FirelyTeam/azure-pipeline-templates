@@ -19,7 +19,8 @@ jobs:
     displayName: 'dotnet new configfile'
     inputs: 
       command: custom
-      arguments: new nugetconfig
+      custom: new
+      arguments: nugetconfig
       
   - task: NuGetCommand@2
     displayName: 'add MyGetSource'
