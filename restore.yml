@@ -1,32 +1,14 @@
 # Repo: FirelyTeam/azure-pipeline-templates
 # File: restore.yml
 
-#parameters:
+parameters:
+  nuGetServiceConnections: #MappingEnginePackageCredentials, VonkPackageCredentials
+  nuGetSources: #--source https://www.myget.org/F/mappingengine/api/v3/index.json --source https://www.myget.org/F/vonk/api/v3/index.json 
 
-  
 steps:
   - task: NuGetAuthenticate@0
     inputs:
-      nuGetServiceConnections: MappingEnginePackageCredentials, VonkPackageCredentials
+      nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
 
-#  - task: DotNetCoreCLI@2
-#    displayName: 'dotnet new configfile'
-#    inputs: 
-#      command: custom
-#      custom: new
-#      arguments: nugetconfig
-      
-#  - task: NuGetCommand@2
-#    displayName: 'add MyGetSource'
-#    inputs: 
-#      command: custom
-#      arguments: sources add  -name myget -Source https://www.myget.org/F/vonk/api/v2/package -configfile .\nuget.config
-
-  - script: dotnet restore --source https://www.myget.org/F/mappingengine/api/v3/index.json --source https://www.myget.org/F/vonk/api/v3/index.json --source https://api.nuget.org/v3/index.json
-    displayName: 'dotnet restore script'
-    
-#  - task: DotNetCoreCLI@2
-#    displayName: 'dotnet restore'
-#    inputs:
-#      command: restore
-#      externalFeedCredentials: MyGetCredentials
+  - script: dotnet restore --source https://api.nuget.org/v3/index.json ${{ parameters.nuGetSources }}
+    displayName: 'dotnet restore'

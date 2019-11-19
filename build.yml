@@ -4,7 +4,9 @@
 parameters:
   # Default values
   useVersionSuffix: true
-  restoreDependies: true
+  restoreDependencies: false
+  nuGetServiceConnections: #required when restoreDependies = true
+  nuGetSources: #required when restoreDependies = true
   packageArtifacts: false
   pool: {}
 
@@ -16,11 +18,11 @@ jobs:
     inputs:
       version: '2.2.107' 
 
-  - ${{ if eq(parameters.restoreDependies, 'true') }}:
+  - ${{ if eq(parameters.restoreDependencies, 'true') }}:
     - template: restore.yml
       parameters:
-        useVersionSuffix: ${{ parameters.useVersionSuffix }}
-
+        nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
+        nuGetSources: ${{ parameters.nuGetSources }}
       
   - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(build.buildNumber) /warnaserror
     displayName: 'dotnet build $(buildConfiguration) with version suffix'
