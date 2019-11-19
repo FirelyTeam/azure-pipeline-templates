@@ -4,6 +4,7 @@
 parameters:
   # Default values
   useVersionSuffix: true
+  restoreDependies: true
   packageArtifacts: false
   pool: {}
 
@@ -14,6 +15,12 @@ jobs:
   - task: DotNetCoreInstaller@2 
     inputs:
       version: '2.2.107' 
+
+  - ${{ if eq(parameters.restoreDependies, 'true') }}:
+    - template: restore.yml
+      parameters:
+        useVersionSuffix: ${{ parameters.useVersionSuffix }}
+
       
   - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(build.buildNumber) /warnaserror
     displayName: 'dotnet build $(buildConfiguration) with version suffix'
