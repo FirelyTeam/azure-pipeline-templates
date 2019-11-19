@@ -5,9 +5,9 @@
 
   
 steps:
-#  - task: NuGetAuthenticate@0
-#    inputs:
-#      nuGetServiceConnections: MyGetCredentials
+  - task: NuGetAuthenticate@0
+    inputs:
+      nuGetServiceConnections: MyGetCredentials
 
 #  - task: DotNetCoreCLI@2
 #    displayName: 'dotnet new configfile'
@@ -21,9 +21,12 @@ steps:
 #    inputs: 
 #      command: custom
 #      arguments: sources add  -name myget -Source https://www.myget.org/F/vonk/api/v2/package -configfile .\nuget.config
+
+  - script: dotnet restore --source https://www.myget.org/F/vonk/api/v2/package 
+    displayName: 'dotnet restore script'
     
-  - task: DotNetCoreCLI@2
-    displayName: 'dotnet restore'
-    inputs:
-      command: restore
-      externalFeedCredentials: MyGetCredentials
+#  - task: DotNetCoreCLI@2
+#    displayName: 'dotnet restore'
+#    inputs:
+#      command: restore
+#      externalFeedCredentials: MyGetCredentials
