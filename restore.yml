@@ -7,7 +7,7 @@
 steps:
   - task: NuGetAuthenticate@0
     inputs:
-      nuGetServiceConnections: MappingEnginePackageCredentials VonkPackageCredentials
+      nuGetServiceConnections: MappingEnginePackageCredentials, VonkPackageCredentials
 
 #  - task: DotNetCoreCLI@2
 #    displayName: 'dotnet new configfile'
