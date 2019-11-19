@@ -22,7 +22,7 @@ steps:
 #      command: custom
 #      arguments: sources add  -name myget -Source https://www.myget.org/F/vonk/api/v2/package -configfile .\nuget.config
 
-  - script: dotnet restore --source https://www.myget.org/F/vonk/api/v2/package 
+  - script: dotnet restore --source https://www.myget.org/F/mappingengine/api/v2/package 
     displayName: 'dotnet restore script'
     
 #  - task: DotNetCoreCLI@2
