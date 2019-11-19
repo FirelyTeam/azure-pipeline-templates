@@ -7,7 +7,7 @@
 steps:
   - task: NuGetAuthenticate@0
     inputs:
-      nuGetServiceConnections: MyGetCredentials
+      nuGetServiceConnections: MappingEnginePackageCredentials VonkPackageCredentials
 
 #  - task: DotNetCoreCLI@2
 #    displayName: 'dotnet new configfile'
@@ -22,7 +22,7 @@ steps:
 #      command: custom
 #      arguments: sources add  -name myget -Source https://www.myget.org/F/vonk/api/v2/package -configfile .\nuget.config
 
-  - script: dotnet restore --source https://www.myget.org/F/mappingengine/api/v3/index.json --source https://api.nuget.org/v3/index.json
+  - script: dotnet restore --source https://www.myget.org/F/mappingengine/api/v3/index.json --source https://www.myget.org/F/vonk/api/v3/index.json --source https://api.nuget.org/v3/index.json
     displayName: 'dotnet restore script'
     
 #  - task: DotNetCoreCLI@2
