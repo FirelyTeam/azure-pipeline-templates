@@ -24,11 +24,11 @@ jobs:
         nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
         nuGetSources: ${{ parameters.nuGetSources }}
       
-  - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(build.buildNumber) /warnaserror
+  - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(build.buildNumber) 
     displayName: 'dotnet build $(buildConfiguration) with version suffix'
     condition: and(succeeded(), eq('${{ parameters.useVersionSuffix }}', 'true'))
 
-  - script: dotnet build --configuration $(buildConfiguration) /warnaserror
+  - script: dotnet build --configuration $(buildConfiguration) 
     displayName: 'dotnet build $(buildConfiguration)'
     condition: and(succeeded(), eq('${{ parameters.useVersionSuffix }}', 'false'))
 
