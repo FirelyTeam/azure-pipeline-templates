@@ -21,6 +21,7 @@ jobs:
     inputs:
       command: publish
       publishWebProjects: false
+      zipAfterPublish: false
       projects: |
        **\*.csproj
        !**\*Tests.csproj
@@ -32,6 +33,7 @@ jobs:
     inputs:
       command: publish
       publishWebProjects: false
+      zipAfterPublish: false
       projects: |
        **\*.csproj
        !**\*Tests.csproj
