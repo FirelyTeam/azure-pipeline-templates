@@ -20,6 +20,7 @@ jobs:
     displayName: 'dotnet publish with version suffix'
     inputs:
       command: publish
+      publishWebProjects: false
       projects: |
        **\*.csproj
        !**\*Tests.csproj
@@ -30,6 +31,7 @@ jobs:
     displayName: 'dotnet publish'
     inputs:
       command: publish
+      publishWebProjects: false
       projects: |
        **\*.csproj
        !**\*Tests.csproj
