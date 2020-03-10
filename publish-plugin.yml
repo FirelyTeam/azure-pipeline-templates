@@ -4,6 +4,7 @@
 parameters:
   pool: {}
   useVersionSuffix: true
+  dotNetCoreVersion: '2.2.107' # can also be use with wildcards:  latest minor version of 3. , use '3.x'
   
 jobs:
 - job: Publish_plugin
@@ -13,11 +14,12 @@ jobs:
   steps:
   - task: DotNetCoreInstaller@2 
     inputs:
-      version: '2.2.107' 
+      version: ${{ parameters.dotNetCoreVersion }} 
 
   - task: DotNetCoreCLI@2
-    displayName: 'dotnet build with version suffix'
+    displayName: 'dotnet publish with version suffix'
     inputs:
+      command: publish
       projects: |
        **\*.csproj
        !**\*Tests.csproj
@@ -25,8 +27,9 @@ jobs:
     condition: and(succeeded(), eq('${{ parameters.useVersionSuffix }}', 'true'))
       
   - task: DotNetCoreCLI@2
-    displayName: 'dotnet build'
+    displayName: 'dotnet publish'
     inputs:
+      command: publish
       projects: |
        **\*.csproj
        !**\*Tests.csproj
