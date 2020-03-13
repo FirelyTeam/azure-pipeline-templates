@@ -4,13 +4,14 @@
 parameters:
   pool: {}
   nugetcredentials: 
+  environment: 'plugin-deploy'
   
 
 jobs:
 - deployment: Deploy_plugin_package
   displayName: 'Deploy plugin as an NuGet Package'
   pool: ${{ parameters.pool }}
-  environment: 'plugin-deploy'
+  environment: ${{ parameters.environment }}
   strategy:
     runOnce:
       deploy:
