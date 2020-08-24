@@ -9,6 +9,7 @@ parameters:
   nuGetServiceConnections: #required when restoreDependies = true
   nuGetSources: #required when restoreDependies = true
   packageArtifacts: false
+  checkoutSubmodules: false
   pool: {}
 
 jobs:
