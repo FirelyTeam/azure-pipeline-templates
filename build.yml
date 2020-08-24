@@ -9,15 +9,20 @@ parameters:
   nuGetServiceConnections: #required when restoreDependies = true
   nuGetSources: #required when restoreDependies = true
   packageArtifacts: false
+  checkoutSubmodules: false
   pool: {}
 
 jobs:
 - job: Build
   pool: ${{ parameters.pool }}
   steps:
-  - task: DotNetCoreInstaller@2 
+  - task: DotNetCoreInstaller@2
     inputs:
-      version: ${{ parameters.dotNetCoreVersion }} 
+      version: ${{ parameters.dotNetCoreVersion }}
+
+  - ${{ if eq(parameters.checkoutSubmodules, 'true') }}:
+    - checkout: self
+      submodules: true
 
   - ${{ if eq(parameters.restoreDependencies, 'true') }}:
     - template: restore.yml
