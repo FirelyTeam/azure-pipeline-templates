@@ -18,7 +18,7 @@ jobs:
     runOnce:
       deploy:
           steps:
-          - task: DownloadPipelineArtifact@2
+          - task: DownloadBuildArtifacts@0
             inputs:
               artifactName: 'NuGet Packages'
               downloadPath: '$(System.ArtifactsDirectory)/NuGetArtifacts'
