@@ -28,7 +28,7 @@ jobs:
             displayName: 'MyGet push'
             inputs:
                 command: push
-                packagesToPush: '$(System.ArtifactsDirectory)/NuGetArtifacts/*.nupkg'
+                packagesToPush: '$(System.ArtifactsDirectory)/NuGetArtifacts/NuGet Packages/*.nupkg'
                 nuGetFeedType: external
                 publishFeedCredentials: ${{ parameters.nugetcredentials }}
                 verbosityPush: Normal  
