@@ -9,6 +9,7 @@ parameters:
   nuGetServiceConnections: #required when restoreDependies = true
   nuGetSources: #required when restoreDependies = true
   packageArtifacts: false
+  publishArtifacts: false
   checkoutSubmodules: false
   pool: {}
 
@@ -47,6 +48,11 @@ jobs:
 
   - ${{ if eq(parameters.packageArtifacts, 'true') }}:
     - template: package.yml
+      parameters:
+        useVersionSuffix: ${{ parameters.useVersionSuffix }}
+  
+  - ${{ if eq(parameters.publishArtifacts, 'true') }}:
+    - template: publish.yml
       parameters:
         useVersionSuffix: ${{ parameters.useVersionSuffix }}
         

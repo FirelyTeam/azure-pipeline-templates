@@ -1,0 +1,37 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: publish.yml
+
+parameters:
+  # Default values
+  useVersionSuffix: true
+
+steps:
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet publish with version suffix'
+  inputs:
+    command: publish
+    publishWebProjects: false
+    zipAfterPublish: false
+    projects: |
+     **\*.csproj
+     !**\*Tests.csproj
+    arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release --version-suffix $(build.buildNumber)'
+  condition: and(succeeded(), eq('${{ parameters.useVersionSuffix }}', 'true'))
+    
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet publish'
+  inputs:
+    command: publish
+    publishWebProjects: false
+    zipAfterPublish: false
+    projects: |
+     **\*.csproj
+     !**\*Tests.csproj
+    arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release'
+  condition: and(succeeded(), eq('${{ parameters.useVersionSuffix }}', 'false'))
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact: plugin'
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/plugin_output'
+    ArtifactName: 'PluginArtifacts'
