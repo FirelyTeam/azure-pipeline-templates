@@ -4,13 +4,14 @@
 parameters:
   # Default values
   useVersionSuffix: true
+  publishWebProjects: false
 
 steps:
 - task: DotNetCoreCLI@2
   displayName: 'dotnet publish with version suffix'
   inputs:
     command: publish
-    publishWebProjects: false
+    publishWebProjects: ${{ parameters.publishWebProjects }}
     zipAfterPublish: false
     projects: |
      **\*.csproj
@@ -22,7 +23,7 @@ steps:
   displayName: 'dotnet publish'
   inputs:
     command: publish
-    publishWebProjects: false
+    publishWebProjects: ${{ parameters.publishWebProjects }}
     zipAfterPublish: false
     projects: |
      **\*.csproj
