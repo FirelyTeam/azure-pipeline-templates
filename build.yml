@@ -10,6 +10,7 @@ parameters:
   nuGetSources: #required when restoreDependies = true
   packageArtifacts: false
   publishArtifacts: false
+  publishWebProjects: false
   checkoutSubmodules: false
   pool: {}
 
@@ -55,4 +56,5 @@ jobs:
     - template: publish.yml
       parameters:
         useVersionSuffix: ${{ parameters.useVersionSuffix }}
+        useVersionSuffix: ${{ parameters.publishWebProjects }}
         
