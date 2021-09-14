@@ -11,6 +11,7 @@ parameters:
   packageArtifacts: false
   publishArtifacts: false
   publishWebProjects: false
+  zipAfterPublish: false
   checkoutSubmodules: false
   pool: {}
 
@@ -57,4 +58,5 @@ jobs:
       parameters:
         useVersionSuffix: ${{ parameters.useVersionSuffix }}
         publishWebProjects: ${{ parameters.publishWebProjects }}
+        zipAfterPublish: ${{ parameters.zipAfterPublish }}
         

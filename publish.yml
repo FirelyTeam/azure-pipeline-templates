@@ -5,6 +5,7 @@ parameters:
   # Default values
   useVersionSuffix: true
   publishWebProjects: false
+  zipAfterPublish: false
 
 steps:
 - task: DotNetCoreCLI@2
@@ -12,7 +13,7 @@ steps:
   inputs:
     command: publish
     publishWebProjects: ${{ parameters.publishWebProjects }}
-    zipAfterPublish: false
+    zipAfterPublish: ${{ parameters.zipAfterPublish }}
     projects: |
      **\*.csproj
      !**\*Tests.csproj
@@ -24,7 +25,7 @@ steps:
   inputs:
     command: publish
     publishWebProjects: ${{ parameters.publishWebProjects }}
-    zipAfterPublish: false
+    zipAfterPublish: ${{ parameters.zipAfterPublish }}
     projects: |
      **\*.csproj
      !**\*Tests.csproj
