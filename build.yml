@@ -56,5 +56,5 @@ jobs:
     - template: publish.yml
       parameters:
         useVersionSuffix: ${{ parameters.useVersionSuffix }}
-        useVersionSuffix: ${{ parameters.publishWebProjects }}
+        publishWebProjects: ${{ parameters.publishWebProjects }}
         
