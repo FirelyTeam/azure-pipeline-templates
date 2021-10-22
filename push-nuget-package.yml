@@ -22,14 +22,9 @@ steps:
   inputs:
     command: custom
     custom: nuget
-    ${{ if eq(parameters.skipDuplicate, 'true') }}
     arguments: >
       push $(Build.ArtifactStagingDirectory)\artifacts\*.nupkg
       --source ${{ parameters.source }}
       --api-key ${{ parameters.apiKey }}
+    ${{ if eq(parameters.skipDuplicate, true) }}:
       --skip-duplicate
-    ${{ else }}
-    arguments: >
-      push $(Build.ArtifactStagingDirectory)\artifacts\*.nupkg
-      --source ${{ parameters.source }}
-      --api-key ${{ parameters.apiKey }}
