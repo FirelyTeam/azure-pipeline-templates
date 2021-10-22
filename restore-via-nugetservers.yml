@@ -1,0 +1,21 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: restore-via-nugetservers.yml
+
+parameters:
+  solutionName:                           # the solution file to restore
+  nuGetServiceConnections:                # Comma-separated list of NuGet service connection names
+  nugetConfigPath: build/nuget.config     # relative path to NuGet config file 
+  
+
+steps:
+- task: NuGetAuthenticate@0
+  inputs:
+    nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
+- task: DotNetCoreCLI@2
+  displayName: Restore
+  inputs:
+    command: restore
+    projects: ${{ parameters.solutionName }}
+    verbosityRestore: Minimal
+    feedsToUse: config
+    nugetConfigPath: ${{ parameters.nugetConfigPath }}
