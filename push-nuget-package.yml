@@ -5,7 +5,6 @@ parameters:
   artifact:            # The name of the artifact to download
   source:              # NuGet Source, like https://nuget.pkg.github.com/FirelyTeam/index.json  
   apiKey:              # The api key to be used for pushing packages to the NuGet server
-  skipDuplicate: false # Allow skipping duplicate packages
 
 steps:
 - powershell: |
