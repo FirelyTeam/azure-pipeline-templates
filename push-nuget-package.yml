@@ -1,0 +1,35 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: push-nuget-package.yml
+
+parameters:
+  artifact:            # The name of the artifact to download
+  source:              # NuGet Source, like https://nuget.pkg.github.com/FirelyTeam/index.json  
+  apiKey:              # The api key to be used for pushing packages to the NuGet server
+  skipDuplicate: false # Allow skipping duplicate packages
+
+steps:
+- download: none
+- task: DownloadPipelineArtifact@2
+  inputs:
+    source: current
+    artifact: ${{ parameters.artifact }}
+    path: $(Build.ArtifactStagingDirectory)\artifacts
+- task: NuGetToolInstaller@1
+  inputs:
+    versionSpec: 5.x
+- task: DotNetCoreCLI@2
+  displayName: Push packages to NuGet server
+  inputs:
+    command: custom
+    custom: nuget
+    ${{ if eq(parameters.skipDuplicate, 'true') }}
+    arguments: >
+      push $(Build.ArtifactStagingDirectory)\artifacts\*.nupkg
+      --source ${{ parameters.source }}
+      --api-key ${{ parameters.apiKey }}
+      --skip-duplicate
+    ${{ else }}
+    arguments: >
+      push $(Build.ArtifactStagingDirectory)\artifacts\*.nupkg
+      --source ${{ parameters.source }}
+      --api-key ${{ parameters.apiKey }}
