@@ -29,5 +29,4 @@ steps:
       push $(Build.ArtifactStagingDirectory)$(PATH_SEPARATOR)artifacts$(PATH_SEPARATOR)*.nupkg
       --source ${{ parameters.source }}
       --api-key ${{ parameters.apiKey }}
-    ${{ if eq(parameters.skipDuplicate, true) }}:
       --skip-duplicate
