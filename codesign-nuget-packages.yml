@@ -1,10 +1,21 @@
 # Repo: FirelyTeam/azure-pipeline-templates
 # File: codesign-nuget-packages.yml
 
+# README:
+# - Create a Variable Group in your Azure Pipeline Project
+# - Link secrets from an Azure key vault as variables 
+# - Select the secrets you want to use and pass them to this template
+
+# Place this template after creating the NuGet Packages (pack command)
+
+# See for an example of using this template:
+#    https://github.com/FirelyTeam/firely-net-sdk/blob/develop-stu3/build/azure-pipelines.yml 
+
+
 parameters:
-  certificateValue:            
-  certificatePasswordValue: 
-  packagePaths: 
+  certificateValue:         # this the secret which refers to a pfx variable in the Azure Key Vault
+  certificatePasswordValue: # this the secret which refers to the password of the pfx certificate
+  packagePaths:             # the NuGet Packages to sign. Wildcards can be used, like *.nupkg
   
 steps:
 - powershell: |
