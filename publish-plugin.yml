@@ -34,7 +34,11 @@ jobs:
       projects: |
        **\*.csproj
        !**\*Tests.csproj
-      arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release --version-suffix $(build.buildNumber)'
+      ${{ if eq(parameters.restoreDependencies, 'true') }}:
+        # dependencies have been restored in one of the previous steps
+        arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release --version-suffix $(build.buildNumber)' --no-restore
+      ${{ else }}:
+        arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release --version-suffix $(build.buildNumber)'
     condition: and(succeeded(), eq('${{ parameters.useVersionSuffix }}', 'true'))
       
   - task: DotNetCoreCLI@2
@@ -46,7 +50,11 @@ jobs:
       projects: |
        **\*.csproj
        !**\*Tests.csproj
-      arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release'
+      ${{ if eq(parameters.restoreDependencies, 'true') }}:
+        # dependencies have been restored in one of the previous steps
+        arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release --no-restore'
+      ${{ else }}:
+        arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release'
     condition: and(succeeded(), eq('${{ parameters.useVersionSuffix }}', 'false'))
 
   - task: PublishBuildArtifacts@1
