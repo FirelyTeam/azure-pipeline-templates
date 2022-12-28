@@ -36,7 +36,7 @@ jobs:
        !**\*Tests.csproj
       ${{ if eq(parameters.restoreDependencies, 'true') }}:
         # dependencies have been restored in one of the previous steps
-        arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release --version-suffix $(build.buildNumber)' --no-restore
+        arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release --version-suffix $(build.buildNumber) --no-restore'
       ${{ else }}:
         arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release --version-suffix $(build.buildNumber)'
     condition: and(succeeded(), eq('${{ parameters.useVersionSuffix }}', 'true'))
