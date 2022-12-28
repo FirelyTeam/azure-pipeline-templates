@@ -43,7 +43,7 @@ jobs:
 
   - script: dotnet build --configuration $(buildConfiguration) --no-restore
     displayName: 'dotnet build $(buildConfiguration) with no restore'
-    condition: and(succeeded(), and(eq('${{ parameters.useVersionSuffix }}', 'flase'), eq('${{ parameters.restoreDependencies }}', 'true')))
+    condition: and(succeeded(), and(eq('${{ parameters.useVersionSuffix }}', 'false'), eq('${{ parameters.restoreDependencies }}', 'true')))
     
   - script: dotnet build --configuration $(buildConfiguration)
     displayName: 'dotnet build $(buildConfiguration)'
