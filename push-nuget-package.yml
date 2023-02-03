@@ -15,7 +15,7 @@ steps:
   inputs:
     source: current
     artifact: ${{ parameters.artifact }}
-    path: $(Build.ArtifactStagingDirectory)$(PATH_SEPARATOR)${{ parameters.source }}
+    path: $(Build.ArtifactStagingDirectory)$(PATH_SEPARATOR)${{ parameters.artifact }}
 - task: NuGetToolInstaller@1
   inputs:
     versionSpec: 5.x
@@ -25,7 +25,7 @@ steps:
     command: custom
     custom: nuget
     arguments: >
-      push $(Build.ArtifactStagingDirectory)$(PATH_SEPARATOR)${{ parameters.source }}$(PATH_SEPARATOR)*.nupkg
+      push $(Build.ArtifactStagingDirectory)$(PATH_SEPARATOR)${{ parameters.artifact }}$(PATH_SEPARATOR)*.nupkg
       --source ${{ parameters.source }}
       --api-key ${{ parameters.apiKey }}
       --skip-duplicate
