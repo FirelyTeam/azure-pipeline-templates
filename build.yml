@@ -10,9 +10,10 @@ parameters:
   nuGetSources: #required when restoreDependies = true
   packageArtifacts: false
   publishArtifacts: false
+  packageArtifactName: 'NuGetPackages'
   publishWebProjects: false
   zipAfterPublish: false
-  checkoutSubmodules: false
+  checkoutSubmodules: false  
   pool: {}
 
 jobs:
@@ -59,6 +60,7 @@ jobs:
   - ${{ if eq(parameters.packageArtifacts, 'true') }}:
     - template: package.yml
       parameters:
+        artifactName: ${{parameters.packageArtifactName}}
         useVersionSuffix: ${{ parameters.useVersionSuffix }}
   
   - ${{ if eq(parameters.publishArtifacts, 'true') }}:
