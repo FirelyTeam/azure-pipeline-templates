@@ -1,0 +1,13 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: scanCompiledArtifacts.yml
+# Description: scan a directory of compiled code for vulnerabilities
+
+parameters:
+- name: 'directory'
+  type: 'string'
+  displayName: 'The directory to scan for vulnerabilities' 
+
+steps:
+- script: | 
+    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp -v ${{ parameters.directory }}:/src  aquasec/trivy:latest  --exit-code 1 --format table --scanners vuln,config,secret filesystem /src
+  displayName: Scan compiled code with Trivy
