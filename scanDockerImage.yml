@@ -1,0 +1,47 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: scanDockerImage.yml
+# Description: scan an docker image for vulnerabilities
+
+parameters: 
+- name: 'dockerRegistryConnection'
+  type: 'string'
+  displayName: 'The Azure Docker Registry connection'
+- name: 'dockerRegistryName'
+  type: 'string'
+  displayName: 'The name of the Docker registry, like firely.azure.io'
+- name: 'dockerImageRepoName'
+  type: 'string'
+  displayName: 'The name of the Docker repository, like firely/server'
+- name: 'dockerImageRepoVersion'
+  type: 'string'
+  displayName: 'The version of the Docker repository'
+
+
+jobs:
+- job: scanDockerImage
+  displayName: Scan Docker image for vulnerabilities
+  dependsOn: createDockerImage
+  steps:
+  - checkout: none
+  - task: Docker@2
+    displayName: Login to ACR
+    inputs:
+      command: login
+      containerRegistry: ${{ parameters.dockerRegistryConnection }}
+  - task: Docker@0
+    displayName: 'Pull Firely Auth image from private registry'
+    inputs:
+      containerregistrytype: 'Container Registry'
+      dockerRegistryConnection: ${{ parameters.dockerRegistryConnection }}
+      action: 'Run a Docker command'
+      customCommand: 'pull ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}'
+
+  - script: | 
+      docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp -v $(System.DefaultWorkingDirectory):/src  aquasec/trivy:latest  --exit-code 1 --format table --scanners vuln,config,secret image ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}
+    displayName: Scan image with Trivy
+
+#  The Trivy task does not work yet.
+#    - task: trivy@1
+#      displayName: Scan image with Trivy
+#      inputs:
+#        image: ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}
