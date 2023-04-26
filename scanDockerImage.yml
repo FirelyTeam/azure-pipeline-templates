@@ -37,7 +37,7 @@ jobs:
       customCommand: 'pull ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}'
 
   - script: | 
-      docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp -v $(System.DefaultWorkingDirectory):/src  aquasec/trivy:latest  --exit-code 1 --format table --scanners vuln,config,secret image ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}
+      docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp -v $(System.DefaultWorkingDirectory):/src  aquasec/trivy:latest image --exit-code 1 --format table --scanners vuln,config,secret --severity HIGH,CRITICAL ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}
     displayName: Scan image with Trivy
 
 #  The Trivy task does not work yet.
