@@ -17,6 +17,7 @@ parameters:
   displayName: 'The version of the Docker repository'
 - name: 'trivyIgnoreFile'
   type: 'string'
+  default: ''
   displayName: 'The version of the Docker repository'
 
 jobs:
