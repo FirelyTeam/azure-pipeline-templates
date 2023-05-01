@@ -15,7 +15,9 @@ parameters:
 - name: 'dockerImageRepoVersion'
   type: 'string'
   displayName: 'The version of the Docker repository'
-
+- name: 'trivyIgnoreFile'
+  type: 'string'
+  displayName: 'The version of the Docker repository'
 
 jobs:
 - job: scanDockerImage
@@ -37,7 +39,7 @@ jobs:
       customCommand: 'pull ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}'
 
   - script: | 
-      docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp -v $(System.DefaultWorkingDirectory):/src  aquasec/trivy:latest image --exit-code 1 --format table --scanners vuln,config,secret --severity HIGH,CRITICAL ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}
+      docker run --rm -v /var/run/docker.sock:/var/run/docker.sock  -v ${{ parameters.trivyIgnoreFile }}:/tmp/trivyignore aquasec/trivy:latest image --ignorefile /tmp/trivyignore --exit-code 1 --format table --scanners vuln,config,secret  ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}
     displayName: Scan image with Trivy
 
 #  The Trivy task does not work yet.
