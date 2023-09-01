@@ -69,3 +69,4 @@ jobs:
         useVersionSuffix: ${{ parameters.useVersionSuffix }}
         publishWebProjects: ${{ parameters.publishWebProjects }}
         zipAfterPublish: ${{ parameters.zipAfterPublish }}
+        
