@@ -1,7 +1,10 @@
 parameters: 
   artifactName:  # name of the artifact on Azure DevOps that contains the Zip file                         
   zipfile: # name or pattern of the zipfile to be extracted and scanned
-  directory: # directory where the zipfile is extracted
+
+variables:
+- name: directory
+  value: $(System.DefaultWorkingDirectory)/Binaries
 
 stages:
 - stage: scanBinaries
