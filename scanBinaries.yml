@@ -1,0 +1,31 @@
+parameters: 
+  artifactName:  # name of the artifact on Azure DevOps that contains the Zip file                         
+  zipfile: # name or pattern of the zipfile to be extracted and scanned
+  directory: # directory where the zipfile is extracted
+
+stages:
+- stage: scanBinaries
+  displayName: Scan vulnerabilities
+  dependsOn: stageBuild
+  pool: 
+    vmImage: 'ubuntu-latest'
+  jobs:
+  - job: scan  
+    displayName: Scan binaries
+    steps:
+    - checkout: none
+    - task: DownloadPipelineArtifact@2
+      displayName: Download ZipDeployArchive
+      inputs:
+        artifactName: ${{ parameters.artifactName }}   
+        targetPath: '$(System.DefaultWorkingDirectory)'
+    - task: ExtractFiles@1
+      displayName: Extract  ${{ parameters.zipFile }}      
+      inputs:
+        archiveFilePatterns: ${{ parameters.zipFile }}   
+        destinationFolder: ${{ parameters.directory }}   
+        cleanDestinationFolder: true
+        overwriteExistingFiles: false
+    - script: | 
+        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp -v ${{ parameters.directory }}:/src  aquasec/trivy:latest  --exit-code 1 --format table --scanners vuln,config,secret filesystem /src
+      displayName: Scan compiled code with Trivy
