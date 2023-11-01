@@ -23,7 +23,6 @@ parameters:
 jobs:
 - job: scanDockerImage
   displayName: Scan Docker image for vulnerabilities
-  dependsOn: createDockerImage
   steps:
   - checkout: self
   - task: Docker@2
@@ -32,7 +31,7 @@ jobs:
       command: login
       containerRegistry: ${{ parameters.dockerRegistryConnection }}
   - task: Docker@0
-    displayName: 'Pull Firely Auth image from private registry'
+    displayName: 'Pull Docker image from private registry'
     inputs:
       containerregistrytype: 'Container Registry'
       dockerRegistryConnection: ${{ parameters.dockerRegistryConnection }}
