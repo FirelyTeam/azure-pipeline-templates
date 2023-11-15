@@ -37,7 +37,7 @@ jobs:
 
  ## retrieve the version suffix from the props file and set it as a variable
   - powershell: |
-      $propsFile = ${{ parameters.propsFile }}
+      [string]$propsFile = ${{ parameters.propsFile }}
       [string]$versionSuffix = ''
 
       if ([string]::IsNullOrEmpty($propsFile) -eq $false)
@@ -66,11 +66,11 @@ jobs:
 
   - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(VersionSuffix) --no-restore
     displayName: 'dotnet build $(buildConfiguration) with version suffix  and no restore'
-    condition: and(succeeded(), eq('${{ parameters.restoreDependencies }}', 'false'))
+    condition: and(succeeded(), eq('${{ parameters.restoreDependencies }}', 'true'))
     
   - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(VersionSuffix)
     displayName: 'dotnet build $(buildConfiguration) with version suffix'
-    condition: and(succeeded(), eq('${{ parameters.restoreDependencies }}', 'true'))
+    condition: and(succeeded(), eq('${{ parameters.restoreDependencies }}', 'false'))
 
   - task: DotNetCoreCLI@2
     displayName: 'dotnet test UnitTests'
