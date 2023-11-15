@@ -4,7 +4,8 @@
 parameters:
   # Default values
   dotNetCoreVersion: '3.1.102' # can also be use with wildcards:  latest minor version of 3. , use '3.x'
-  useVersionSuffix: true
+  useVersionSuffix: true # if true, the build number will be added as or to the existing version suffix
+  versionSuffix: ''
   restoreDependencies: false
   nuGetServiceConnections: #required when restoreDependies = true
   nuGetSources: #required when restoreDependies = true
@@ -33,22 +34,35 @@ jobs:
       parameters:
         nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
         nuGetSources: ${{ parameters.nuGetSources }}
-      
-  - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(build.buildNumber) --no-restore
-    displayName: 'dotnet build $(buildConfiguration) with version suffix  and no restore'
-    condition: and(succeeded(), and(eq('${{ parameters.useVersionSuffix }}', 'true'), eq('${{ parameters.restoreDependencies }}', 'true')))
-    
-  - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(build.buildNumber)
-    displayName: 'dotnet build $(buildConfiguration) with version suffix'
-    condition: and(succeeded(), and(eq('${{ parameters.useVersionSuffix }}', 'true'), eq('${{ parameters.restoreDependencies }}', 'false')))
 
-  - script: dotnet build --configuration $(buildConfiguration) --no-restore
-    displayName: 'dotnet build $(buildConfiguration) with no restore'
-    condition: and(succeeded(), and(eq('${{ parameters.useVersionSuffix }}', 'false'), eq('${{ parameters.restoreDependencies }}', 'true')))
+ ## add buildnumber to version suffix parameter
+  - powershell: |
+      $versionSuffix = ${{ parameters.versionSuffix}}
+
+      if (${{ paramaters.useVersionSuffix -eq $true) 
+        {
+          if ([string]::IsNullOrEmpty($versionSuffix)) 
+        {
+          $versionSuffix = $env:BUILD_BUILDNUMBER
+        }
+        else {
+          $versionSuffix = $versionSuffix + "-" + $env:BUILD_BUILDNUMBER
+        }
+      }    
+
+      Write-Host "Updated Version: $versionSuffix"
+
+      Write-Host "##vso[task.setvariable variable=UpdatedVersionSuffix]$versionSuffix"
+    displayName: 'Set versionSuffix to build number'
+    condition: succeeded()  
+
+  - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(UpdatedVersionSuffix) --no-restore
+    displayName: 'dotnet build $(buildConfiguration) with version suffix  and no restore'
+    condition: and(succeeded(), eq('${{ parameters.restoreDependencies }}', 'false')))
     
-  - script: dotnet build --configuration $(buildConfiguration)
-    displayName: 'dotnet build $(buildConfiguration)'
-    condition: and(succeeded(), and(eq('${{ parameters.useVersionSuffix }}', 'false'), eq('${{ parameters.restoreDependencies }}', 'false')))
+  - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(UpdatedVersionSuffix)
+    displayName: 'dotnet build $(buildConfiguration) with version suffix'
+    condition: and(succeeded(), eq('${{ parameters.restoreDependencies }}', 'true')))
 
   - task: DotNetCoreCLI@2
     displayName: 'dotnet test UnitTests'
