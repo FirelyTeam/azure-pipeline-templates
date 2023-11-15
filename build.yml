@@ -40,7 +40,7 @@ jobs:
       $propsFile = ${{ parameters.propsFile }}
       [string]$versionSuffix = ''
 
-      if ([string]::IsNullOrEmpty($propsFile) -eq false) 
+      if ([string]::IsNullOrEmpty($propsFile) -eq $false)
       {
         $xml = [xml](get-content $propsFile)      
         #Get the suffix version 
