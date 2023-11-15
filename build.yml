@@ -49,9 +49,8 @@ jobs:
   - powershell: |    
       Write-Host "Updating Build Number to Version Suffix"
 
-      [string]$versionSuffix = $VersionSuffix
-
-      if ([string]::IsNullOrEmpty($VersionSuffix)) 
+      [string]$versionSuffix = $(VersionSuffix)
+      if ([string]::IsNullOrEmpty($versionSuffix)) 
       {
         $versionSuffix = $env:BUILD_BUILDNUMBER
       }
@@ -60,7 +59,7 @@ jobs:
         $versionSuffix = $versionSuffix + "-" + $env:BUILD_BUILDNUMBER
       }    
 
-      Write-Host "Version Suffix: $versionSuffix"
+      Write-Host "Updated version Suffix: $versionSuffix"
       Write-Host "##vso[task.setvariable variable=VersionSuffix]$versionSuffix"
     displayName: 'add buildnumber to version suffix'
     condition: and(succeeded(), eq('${{ parameters.useVersionSuffix }}', 'true'))
