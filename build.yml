@@ -66,11 +66,11 @@ jobs:
 
   - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(VersionSuffix) --no-restore
     displayName: 'dotnet build $(buildConfiguration) with version suffix  and no restore'
-    condition: and(succeeded(), eq('${{ parameters.restoreDependencies }}', 'false')))
+    condition: and(succeeded(), eq('${{ parameters.restoreDependencies }}', 'false'))
     
   - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(VersionSuffix)
     displayName: 'dotnet build $(buildConfiguration) with version suffix'
-    condition: and(succeeded(), eq('${{ parameters.restoreDependencies }}', 'true')))
+    condition: and(succeeded(), eq('${{ parameters.restoreDependencies }}', 'true'))
 
   - task: DotNetCoreCLI@2
     displayName: 'dotnet test UnitTests'
