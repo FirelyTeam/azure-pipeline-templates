@@ -29,44 +29,41 @@ jobs:
     - checkout: self
       submodules: true
 
+  ## retrieve the version suffix from the props file and set it as a variable
+  - powershell: |
+    [string]$propsFile = '${{ parameters.propsFile }}'
+    [string]$versionSuffix = ''
+
+    if ([string]::IsNullOrEmpty($propsFile) -eq $false)
+    {
+      $xml = [xml](get-content $propsFile)      
+      #Get the suffix version 
+      $versionSuffix = $xml.Project.PropertyGroup.VersionSuffix
+      $versionSuffix = $versionSuffix.Trim()      
+    }  
+
+    Write-Host "Version Suffix: $versionSuffix"
+    Write-Host "##vso[task.setvariable variable=VersionSuffix]$versionSuffix"
+  displayName: 'retrieve version suffix'
+
+  - powershell: |    
+    Write-Host "Updating Build Number to Version Suffix"
+    if ([string]::IsNullOrEmpty($VersionSuffix)) 
+    {
+      $VersionSuffix = $env:BUILD_BUILDNUMBER
+    }
+    else 
+    {
+      $VersionSuffix = $VersionSuffix + "-" + $env:BUILD_BUILDNUMBER
+    }    
+  displayName: 'add buildnumber to version suffix'
+  condition: and(succeeded(), eq('${{ parameters.useVersionSuffix }}', 'true'))
+
   - ${{ if eq(parameters.restoreDependencies, 'true') }}:
     - template: restore.yml
       parameters:
         nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
-        nuGetSources: ${{ parameters.nuGetSources }}
-
- ## retrieve the version suffix from the props file and set it as a variable
-  - powershell: |
-      [string]$propsFile = '${{ parameters.propsFile }}'
-      [string]$versionSuffix = ''
-
-      if ([string]::IsNullOrEmpty($propsFile) -eq $false)
-      {
-        $xml = [xml](get-content $propsFile)      
-        #Get the suffix version 
-        $versionSuffix = $xml.Project.PropertyGroup.VersionSuffix
-        $versionSuffix = $versionSuffix.Trim()      
-      }  
-
-      Write-Host ${{ parameters.useVersionSuffix }}
-
-      if ( ${{ parameters.useVersionSuffix }} -eq true)
-      {
-        Write-Host "Updating Build Number to Version Suffix"
-        if ([string]::IsNullOrEmpty($versionSuffix)) 
-        {
-          $versionSuffix = $env:BUILD_BUILDNUMBER
-        }
-        else 
-        {
-          $versionSuffix = $versionSuffix + "-" + $env:BUILD_BUILDNUMBER
-        }      
-      }        
-
-      Write-Host "Version Suffix: $versionSuffix"
-      Write-Host "##vso[task.setvariable variable=VersionSuffix]$versionSuffix"
-    displayName: 'Set versionSuffix to build number'
-    condition: succeeded()  
+        nuGetSources: ${{ parameters.nuGetSources }} 
 
   - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(VersionSuffix) --no-restore
     displayName: 'dotnet build $(buildConfiguration) with version suffix  and no restore'
