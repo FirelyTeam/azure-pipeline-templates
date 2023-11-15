@@ -46,11 +46,11 @@ jobs:
         #Get the suffix version 
         $versionSuffix = $xml.Project.PropertyGroup.VersionSuffix
         $versionSuffix = $versionSuffix.Trim()      
-      }      
+      }  
 
-       Write-Host ${{ parameters.useVersionSuffix }}
+      Write-Host ${{ parameters.useVersionSuffix -eq true }}
 
-      if (${{ parameters.useVersionSuffix }} -eq "true")
+      if ( ${{ parameters.useVersionSuffix }})
       {
         Write-Host "Updating Build Number to Version Suffix"
         if ([string]::IsNullOrEmpty($versionSuffix)) 
