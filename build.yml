@@ -5,7 +5,7 @@ parameters:
   # Default values
   dotNetCoreVersion: '3.1.102' # can also be use with wildcards:  latest minor version of 3. , use '3.x'
   useVersionSuffix: true # if true, the build number will be added as or to the existing version suffix
-  versionSuffix: ''
+  propsFile: '' # used for versionSuffix, if not empty, the versionSuffix will be read from the props file
   restoreDependencies: false
   nuGetServiceConnections: #required when restoreDependies = true
   nuGetSources: #required when restoreDependies = true
@@ -35,9 +35,18 @@ jobs:
         nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
         nuGetSources: ${{ parameters.nuGetSources }}
 
- ## add buildnumber to version suffix parameter
+ ## retrieve the version suffix from the props file and set it as a variable
   - powershell: |
-      $versionSuffix = ${{ parameters.versionSuffix}}
+      $propsFile = ${{ parameters.propsFile }}
+      [string]$versionSuffix = ''
+
+      if ([string]::IsNullOrEmpty($propsFile) -eq false) 
+      {
+        $xml = [xml](get-content $propsFile)      
+        #Get the suffix version 
+        $versionSuffix = $xml.Project.PropertyGroup.VersionSuffix
+        $versionSuffix = $versionSuffix.Trim()      
+      }      
 
       if (${{ paramaters.useVersionSuffix -eq $true) 
         {
@@ -50,17 +59,17 @@ jobs:
         }
       }    
 
-      Write-Host "Updated Version: $versionSuffix"
+      Write-Host "Version Suffix: $versionSuffix"
+      Write-Host "##vso[task.setvariable variable=VersionSuffix]$versionSuffix"
 
-      Write-Host "##vso[task.setvariable variable=UpdatedVersionSuffix]$versionSuffix"
     displayName: 'Set versionSuffix to build number'
     condition: succeeded()  
 
-  - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(UpdatedVersionSuffix) --no-restore
+  - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(VersionSuffix) --no-restore
     displayName: 'dotnet build $(buildConfiguration) with version suffix  and no restore'
     condition: and(succeeded(), eq('${{ parameters.restoreDependencies }}', 'false')))
     
-  - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(UpdatedVersionSuffix)
+  - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(VersionSuffix)
     displayName: 'dotnet build $(buildConfiguration) with version suffix'
     condition: and(succeeded(), eq('${{ parameters.restoreDependencies }}', 'true')))
 
