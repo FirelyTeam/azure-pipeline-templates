@@ -37,7 +37,7 @@ jobs:
 
  ## retrieve the version suffix from the props file and set it as a variable
   - powershell: |
-      [string]$propsFile = ${{ parameters.propsFile }}
+      [string]$propsFile = '${{ parameters.propsFile }}'
       [string]$versionSuffix = ''
 
       if ([string]::IsNullOrEmpty($propsFile) -eq $false)
