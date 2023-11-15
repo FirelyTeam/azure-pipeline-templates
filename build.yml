@@ -48,20 +48,19 @@ jobs:
         $versionSuffix = $versionSuffix.Trim()      
       }      
 
-      if (${{ paramaters.useVersionSuffix -eq $true) 
-        {
-          if ([string]::IsNullOrEmpty($versionSuffix)) 
+      if (${{ paramaters.useVersionSuffix }} -eq $true) 
+      {
+        if ([string]::IsNullOrEmpty($versionSuffix)) 
         {
           $versionSuffix = $env:BUILD_BUILDNUMBER
         }
         else {
           $versionSuffix = $versionSuffix + "-" + $env:BUILD_BUILDNUMBER
-        }
-      }    
+        }      
+      }        
 
       Write-Host "Version Suffix: $versionSuffix"
       Write-Host "##vso[task.setvariable variable=VersionSuffix]$versionSuffix"
-
     displayName: 'Set versionSuffix to build number'
     condition: succeeded()  
 
