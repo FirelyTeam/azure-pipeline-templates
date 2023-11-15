@@ -48,7 +48,7 @@ jobs:
         $versionSuffix = $versionSuffix.Trim()      
       }      
 
-      if (${{ paramaters.useVersionSuffix }} -eq $true) 
+      if (${{ parameters.useVersionSuffix }} -eq $true) 
       {
         if ([string]::IsNullOrEmpty($versionSuffix)) 
         {
