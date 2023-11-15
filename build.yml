@@ -48,7 +48,7 @@ jobs:
         $versionSuffix = $versionSuffix.Trim()      
       }  
 
-      Write-Host ${{ parameters.useVersionSuffix -eq true }}
+      Write-Host ${{ parameters.useVersionSuffix }} -eq true }}
 
       if ( ${{ parameters.useVersionSuffix }})
       {
