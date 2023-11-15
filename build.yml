@@ -49,7 +49,7 @@ jobs:
   - powershell: |    
       Write-Host "Updating Build Number to Version Suffix"
 
-      [string]$versionSuffix = $(VersionSuffix)
+      [string]$versionSuffix = '$(VersionSuffix)'
       if ([string]::IsNullOrEmpty($versionSuffix)) 
       {
         $versionSuffix = $env:BUILD_BUILDNUMBER
