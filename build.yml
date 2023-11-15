@@ -48,14 +48,15 @@ jobs:
         $versionSuffix = $versionSuffix.Trim()      
       }      
 
-      if (${{ parameters.useVersionSuffix }} -eq $true) 
+      if (${{ parameters.useVersionSuffix }} -eq 'true')
       {
         Write-Host "Updating Build Number to Version Suffix"
         if ([string]::IsNullOrEmpty($versionSuffix)) 
         {
           $versionSuffix = $env:BUILD_BUILDNUMBER
         }
-        else {
+        else 
+        {
           $versionSuffix = $versionSuffix + "-" + $env:BUILD_BUILDNUMBER
         }      
       }        
