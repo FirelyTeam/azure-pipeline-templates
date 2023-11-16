@@ -15,7 +15,7 @@ steps:
       [string] $versionSuffix = '${{ parameters.versionSuffix }}'
       [bool] $useVersionSuffix = ${{ parameters.useVersionSuffix }}
       
-      if ([string]::IsNullOrEmpty($versionSuffix) -and ${{ $useVersionSuffix }} -eq $true) 
+      if ([string]::IsNullOrEmpty($versionSuffix) -and $useVersionSuffix -eq $true) 
       {
         $versionSuffix = $env:BUILD_BUILDNUMBER
       }
