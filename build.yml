@@ -71,11 +71,11 @@ jobs:
         nuGetSources: ${{ parameters.nuGetSources }} 
 
   - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(VersionSuffix) --no-restore
-    displayName: 'dotnet build $(buildConfiguration) with version suffix  and no restore'
+    displayName: 'dotnet build $(buildConfiguration) with no restore'
     condition: and(succeeded(), eq('${{ parameters.restoreDependencies }}', 'true'))
     
   - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(VersionSuffix)
-    displayName: 'dotnet build $(buildConfiguration) with version suffix'
+    displayName: 'dotnet build $(buildConfiguration)'
     condition: and(succeeded(), eq('${{ parameters.restoreDependencies }}', 'false'))
 
   - task: DotNetCoreCLI@2

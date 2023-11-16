@@ -23,7 +23,7 @@ steps:
   displayName: 'Retrieve version suffix for publishing'
 
 - task: DotNetCoreCLI@2
-  displayName: 'dotnet publish with version suffix'
+  displayName: 'dotnet publish'
   inputs:
     command: publish
     publishWebProjects: ${{ parameters.publishWebProjects }}
