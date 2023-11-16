@@ -1,15 +1,21 @@
 parameters:
   # Default values
-  useVersionSuffix: true
-  versionSuffix: ''
-  artifactName: 'NuGetPackages'
+  - name: useVersionSuffix
+    type: boolean
+    default: true
+  - name: versionSuffix
+    type: string
+    default: ''
+  - name: artifactName
+    type: string
+    default: 'NuGetPackages'
 
 steps:
   - powershell: |
-      [string]$versionSuffix = '${{ parameters.versionSuffix }}'
-      [string]$useVersionSuffix = '${{ parameters.useVersionSuffix }}''
+      [string] $versionSuffix = '${{ parameters.versionSuffix }}'
+      [bool] $useVersionSuffix = ${{ parameters.useVersionSuffix }}
       
-      if ([string]::IsNullOrEmpty($versionSuffix) -and ${{ $useVersionSuffix }} -eq 'true') 
+      if ([string]::IsNullOrEmpty($versionSuffix) -and ${{ $useVersionSuffix }} -eq $true) 
       {
         $versionSuffix = $env:BUILD_BUILDNUMBER
       }
