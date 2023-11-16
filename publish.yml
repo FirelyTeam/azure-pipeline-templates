@@ -6,20 +6,22 @@ parameters:
   useVersionSuffix: true
   publishWebProjects: false
   zipAfterPublish: false
+  versionSuffix: ''
 
 steps:
-- task: DotNetCoreCLI@2
-  displayName: 'dotnet publish with version suffix'
-  inputs:
-    command: publish
-    publishWebProjects: ${{ parameters.publishWebProjects }}
-    zipAfterPublish: ${{ parameters.zipAfterPublish }}
-    projects: |
-     **\*.csproj
-     !**\*Tests.csproj
-    arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release --version-suffix $(build.buildNumber)'
-  condition: and(succeeded(), eq('${{ parameters.useVersionSuffix }}', 'true'))
+- powershell: |
+    [string] $versionSuffix = '${{ parameters.versionSuffix }}'
+    [string] $useVersionSuffix = ${{ parameters.useVersionSuffix }}
     
+    if ([string]::IsNullOrEmpty($versionSuffix) -and $useVersionSuffix -eq 'true') 
+    {
+      $versionSuffix = $env:BUILD_BUILDNUMBER
+    }
+    
+    Write-Host "Version Suffix: $versionSuffix"
+    Write-Host "##vso[task.setvariable variable=VersionSuffix]$versionSuffix"
+  displayName: 'Retrieve version suffix for publishing'
+
 - task: DotNetCoreCLI@2
   displayName: 'dotnet publish'
   inputs:
@@ -29,9 +31,9 @@ steps:
     projects: |
      **\*.csproj
      !**\*Tests.csproj
-    arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release'
-  condition: and(succeeded(), eq('${{ parameters.useVersionSuffix }}', 'false'))
-
+    arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release --version-suffix $(VersionSuffix)'
+  condition: succeeded()
+    
 - task: PublishBuildArtifacts@1
   displayName: 'Publish Artifact: plugin'
   inputs:
