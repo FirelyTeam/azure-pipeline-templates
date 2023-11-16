@@ -16,7 +16,7 @@ steps:
       
       Write-Host "Version Suffix: $versionSuffix"
       Write-Host "##vso[task.setvariable variable=VersionSuffix]$versionSuffix"
-    displayName: 'Retrieve version suffix'
+    displayName: 'Retrieve version suffix for packaging'
 
   # Package nugets
   - script: dotnet pack --no-build --configuration $(buildConfiguration) --version-suffix $(VersionSuffix) --output $(Build.artifactStagingDirectory)/packages

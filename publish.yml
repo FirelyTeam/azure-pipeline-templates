@@ -10,17 +10,17 @@ parameters:
 
 steps:
 - powershell: |
-    [string]$versionSuffix = '${{ parameters.versionSuffix }}'
-    [string]$useVersionSuffix = '${{ parameters.useVersionSuffix }}''
+    [string] $versionSuffix = '${{ parameters.versionSuffix }}'
+    [string] $useVersionSuffix = ${{ parameters.useVersionSuffix }}
     
-    if ([string]::IsNullOrEmpty($versionSuffix) -and $useVersionSuffix -eq true) 
+    if ([string]::IsNullOrEmpty($versionSuffix) -and $useVersionSuffix -eq 'true') 
     {
       $versionSuffix = $env:BUILD_BUILDNUMBER
     }
     
     Write-Host "Version Suffix: $versionSuffix"
     Write-Host "##vso[task.setvariable variable=VersionSuffix]$versionSuffix"
-  displayName: 'Retrieve version suffix'
+  displayName: 'Retrieve version suffix for publishing'
 
 - task: DotNetCoreCLI@2
   displayName: 'dotnet publish with version suffix'
