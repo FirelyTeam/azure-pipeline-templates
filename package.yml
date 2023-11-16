@@ -1,8 +1,8 @@
 parameters:
   # Default values
-  - useVersionSuffix: true
-  - versionSuffix: ''
-  - artifactName: 'NuGetPackages'
+  useVersionSuffix: true
+  versionSuffix: ''
+  artifactName: 'NuGetPackages'
 
 steps:
   - powershell: |
