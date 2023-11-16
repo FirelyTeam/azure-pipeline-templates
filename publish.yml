@@ -11,9 +11,9 @@ parameters:
 steps:
 - powershell: |
     [string]$versionSuffix = '${{ parameters.versionSuffix }}'
-    Write-Host "Version Suffix: $versionSuffix"
-    [bool]$useVersionSuffix = ${{ parameters.useVersionSuffix }}
-    if ([string]::IsNullOrEmpty($versionSuffix) -and ${{ $useVersionSuffix }} -eq $true) 
+    [string]$useVersionSuffix = '${{ parameters.useVersionSuffix }}''
+    
+    if ([string]::IsNullOrEmpty($versionSuffix) -and ${{ $useVersionSuffix }} -eq 'true') 
     {
       $versionSuffix = $env:BUILD_BUILDNUMBER
     }
