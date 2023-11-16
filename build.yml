@@ -44,7 +44,7 @@ jobs:
 
       Write-Host "Version Suffix: $versionSuffix"
       Write-Host "##vso[task.setvariable variable=VersionSuffix]$versionSuffix"
-    displayName: 'retrieve version suffix'
+    displayName: 'Retrieve version suffix'
 
   - powershell: |    
       Write-Host "Updating Build Number to Version Suffix"
@@ -61,7 +61,7 @@ jobs:
 
       Write-Host "Updated version Suffix: $versionSuffix"
       Write-Host "##vso[task.setvariable variable=VersionSuffix]$versionSuffix"
-    displayName: 'add buildnumber to version suffix'
+    displayName: 'Add buildnumber to version suffix'
     condition: and(succeeded(), eq('${{ parameters.useVersionSuffix }}', 'true'))
 
   - ${{ if eq(parameters.restoreDependencies, 'true') }}:
@@ -90,6 +90,7 @@ jobs:
       parameters:
         artifactName: ${{parameters.packageArtifactName}}
         useVersionSuffix: ${{ parameters.useVersionSuffix }}
+        versionSuffix: $(VersionSuffix)
   
   - ${{ if eq(parameters.publishArtifacts, 'true') }}:
     - template: publish.yml
@@ -97,4 +98,4 @@ jobs:
         useVersionSuffix: ${{ parameters.useVersionSuffix }}
         publishWebProjects: ${{ parameters.publishWebProjects }}
         zipAfterPublish: ${{ parameters.zipAfterPublish }}
-        
+        versionSuffix: $(VersionSuffix)
