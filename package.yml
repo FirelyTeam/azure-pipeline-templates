@@ -6,16 +6,16 @@ parameters:
 
 steps:
   - powershell: |
-      [string] $versionSuffix = '${{ parameters.versionSuffix }}'
-      [string] $addBuildNumber= ${{ parameters.useVersionSuffix }}
+      # [string] $versionSuffix = '${{ parameters.versionSuffix }}'
+      # [string] $addBuildNumber = '${{ parameters.useVersionSuffix }}'
       
-      if ([string]::IsNullOrEmpty($versionSuffix) -and $addBuildNumber -eq 'true') 
-      {
-        $versionSuffix = $env:BUILD_BUILDNUMBER
-      }
+      # if ([string]::IsNullOrEmpty($versionSuffix) -and $addBuildNumber -eq 'true') 
+      # {
+      #   $versionSuffix = $env:BUILD_BUILDNUMBER
+      # }
       
-      Write-Host "Version Suffix: $versionSuffix"
-      Write-Host "##vso[task.setvariable variable=VersionSuffixPackage;]$versionSuffix"
+      # Write-Host "Version Suffix: $versionSuffix"
+      Write-Host "##vso[task.setvariable variable=VersionSuffixPackage;]rc2"
     displayName: 'Retrieve version suffix for packaging'
 
   - powershell: |    
