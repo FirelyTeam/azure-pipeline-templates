@@ -7,22 +7,22 @@ parameters:
 steps:
   - powershell: |
       [string] $versionSuffix = '${{ parameters.versionSuffix }}'
-      [string] $useVersionSuffix = ${{ parameters.useVersionSuffix }}
+      [string] $addBuildNumber= ${{ parameters.useVersionSuffix }}
       
-      if ([string]::IsNullOrEmpty($versionSuffix) -and $useVersionSuffix -eq 'true') 
+      if ([string]::IsNullOrEmpty($versionSuffix) -and $addBuildNumber -eq 'true') 
       {
         $versionSuffix = $env:BUILD_BUILDNUMBER
       }
       
       Write-Host "Version Suffix: $versionSuffix"
-      Write-Host "##vso[task.setvariable variable=VersionSuffix]$versionSuffix"
+      Write-Host "##vso[task.setvariable variable=VersionSuffixPackage;]$versionSuffix"
     displayName: 'Retrieve version suffix for packaging'
 
   - powershell: |    
       Write-Host "Determining if version suffix should be used"
       
       [string]$useVersionSuffix = 'true'
-      [string]$versionSuffix = '$(VersionSuffix)'
+      [string]$versionSuffix = '$(VersionSuffixPackage)'
 
       Write-Host "Version Suffix: $versionSuffix"
 
@@ -32,11 +32,11 @@ steps:
       }
       
       Write-Host "Use Version Suffix: $useVersionSuffix"
-      Write-Host "##vso[task.setvariable variable=UseVersionSuffix]$useVersionSuffix"
+      Write-Host "##vso[task.setvariable variable=UseVersionSuffix;]$useVersionSuffix"
     displayName: 'Determine version suffix use for packaging'
 
   # Package nugets
-  - script: dotnet pack --no-build --configuration $(buildConfiguration) --version-suffix $(VersionSuffix) --output $(Build.artifactStagingDirectory)/packages
+  - script: dotnet pack --no-build --configuration $(buildConfiguration) --version-suffix $(VersionSuffixPackage) --output $(Build.artifactStagingDirectory)/packages
     displayName: 'dotnet pack $(buildConfiguration) with version suffix'
     condition: and(succeeded(), eq(variables.UseVersionSuffix, 'true'))
 
