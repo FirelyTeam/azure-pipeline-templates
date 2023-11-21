@@ -23,21 +23,21 @@ steps:
   displayName: 'Retrieve version suffix for publishing'
 
 - powershell: |    
-      Write-Host "Determining if version suffix should be used"
-      
-      [string]$useVersionSuffix = 'true'
-      [string]$versionSuffix = '$(VersionSuffix)'
+    Write-Host "Determining if version suffix should be used"
+    
+    [string]$useVersionSuffix = 'true'
+    [string]$versionSuffix = '$(VersionSuffix)'
 
-      Write-Host "Version Suffix: $versionSuffix"
+    Write-Host "Version Suffix: $versionSuffix"
 
-      if ([string]::IsNullOrEmpty($versionSuffix)) 
-      {
-        $useVersionSuffix = 'false'
-      }
-      
-      Write-Host "Use Version Suffix: $useVersionSuffix"
-      Write-Host "##vso[task.setvariable variable=UseVersionSuffix]$useVersionSuffix"
-    displayName: 'Determine version suffix use for packaging'
+    if ([string]::IsNullOrEmpty($versionSuffix)) 
+    {
+      $useVersionSuffix = 'false'
+    }
+    
+    Write-Host "Use Version Suffix: $useVersionSuffix"
+    Write-Host "##vso[task.setvariable variable=UseVersionSuffix]$useVersionSuffix"
+  displayName: 'Determine version suffix use for packaging'
 
 - task: DotNetCoreCLI@2
   displayName: 'dotnet publish'
