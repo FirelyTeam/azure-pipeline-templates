@@ -82,7 +82,7 @@ jobs:
     displayName: 'Determine version suffix use'
 
   - ${{ if eq(parameters.restoreDependencies, 'true') }}:
-    - template: restore.yml@templates
+    - template: restore.yml
       parameters:
         nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
         nuGetSources: ${{ parameters.nuGetSources }}
