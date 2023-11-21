@@ -37,7 +37,7 @@ steps:
     
     Write-Host "Use Version Suffix: $useVersionSuffix"
     Write-Host "##vso[task.setvariable variable=UseVersionSuffix]$useVersionSuffix"
-  displayName: 'Determine version suffix use for packaging'
+  displayName: 'Determine version suffix use for publishing'
 
 - task: DotNetCoreCLI@2
   displayName: 'dotnet publish'
