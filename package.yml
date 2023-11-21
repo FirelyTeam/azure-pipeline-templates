@@ -13,7 +13,6 @@ steps:
 
       if ([string]::IsNullOrEmpty($versionSuffix) -and $addBuildNumber -eq 'true') 
       {
-        Write-Host "I've arrived here"
         $versionSuffix = $env:BUILD_BUILDNUMBER
       }
       
