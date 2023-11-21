@@ -87,11 +87,11 @@ jobs:
         nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
         nuGetSources: ${{ parameters.nuGetSources }}
       
-  - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(VersionSuffix) --no-restore
+  - script: dotnet build --configuration $(buildConfiguration) --no-restore
     displayName: 'dotnet build $(buildConfiguration) with no restore'
     condition: and(succeeded(), and(eq('${{ parameters.restoreDependencies }}', 'true'), eq(variables.UseVersionSuffix, 'false')))
 
-  - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(VersionSuffix)
+  - script: dotnet build --configuration $(buildConfiguration) 
     displayName: 'dotnet build $(buildConfiguration)'
     condition: and(succeeded(), and(eq('${{ parameters.restoreDependencies }}', 'false'), eq(variables.UseVersionSuffix, 'false')))
 
