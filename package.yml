@@ -17,7 +17,7 @@ steps:
       }
       
       Write-Host "Version Suffix: $versionSuffix"
-      Write-Host "##vso[task.setvariable variable=VersionSuffixPackage;]rc2"
+      Write-Host "##vso[task.setvariable variable=VersionSuffixPackage;]$versionSuffix"
     displayName: 'Retrieve version suffix for packaging'
 
   - powershell: |    
