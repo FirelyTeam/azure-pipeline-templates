@@ -22,6 +22,23 @@ steps:
     Write-Host "##vso[task.setvariable variable=VersionSuffix]$versionSuffix"
   displayName: 'Retrieve version suffix for publishing'
 
+- powershell: |    
+    Write-Host "Determining if version suffix should be used"
+    
+    [string]$useVersionSuffix = 'true'
+    [string]$versionSuffix = '$(VersionSuffix)'
+
+    Write-Host "Version Suffix: $versionSuffix"
+
+    if ([string]::IsNullOrEmpty($versionSuffix)) 
+    {
+      $useVersionSuffix = 'false'
+    }
+    
+    Write-Host "Use Version Suffix: $useVersionSuffix"
+    Write-Host "##vso[task.setvariable variable=UseVersionSuffix]$useVersionSuffix"
+  displayName: 'Determine version suffix use for publishing'
+
 - task: DotNetCoreCLI@2
   displayName: 'dotnet publish'
   inputs:
@@ -31,8 +48,20 @@ steps:
     projects: |
      **\*.csproj
      !**\*Tests.csproj
+    arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release'
+  condition: and(succeeded(), eq(variables.UseVersionSuffix, 'false'))
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet publish with version suffix'
+  inputs:
+    command: publish
+    publishWebProjects: ${{ parameters.publishWebProjects }}
+    zipAfterPublish: ${{ parameters.zipAfterPublish }}
+    projects: |
+      **\*.csproj
+      !**\*Tests.csproj
     arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release --version-suffix $(VersionSuffix)'
-  condition: succeeded()
+  condition: and(succeeded(), eq(variables.UseVersionSuffix, 'true'))
     
 - task: PublishBuildArtifacts@1
   displayName: 'Publish Artifact: plugin'
