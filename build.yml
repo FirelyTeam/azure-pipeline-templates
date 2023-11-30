@@ -119,7 +119,7 @@ jobs:
           $xml = [xml](get-content $propsFile)      
           #Get the suffix version 
           $versionPrefix = $xml.Project.PropertyGroup.VersionPrefix
-          $versionPrefix = $versionSuffix.Trim()      
+          $versionPrefix = $versionPrefix.Trim()      
         }  
 
         $versionSuffix = '$(VersionSuffix)'
