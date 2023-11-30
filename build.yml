@@ -103,6 +103,38 @@ jobs:
     displayName: 'dotnet build $(buildConfiguration) with version suffix'
     condition: and(succeeded(), and(eq('${{ parameters.restoreDependencies }}', 'false'), eq(variables.UseVersionSuffix, 'true')))
 
+  - task: PowerShell@2
+    name: OutputVersion
+    displayName: Output Version
+    inputs:
+      failOnStderr: true
+      targetType: 'inline'
+      script: |
+        [string]$propsFile = '${{ parameters.propsFile }}'
+        [string]$versionPrefix = ''
+        [string]$version = ''
+
+        if ([string]::IsNullOrEmpty($propsFile) -eq $false)
+        {
+          $xml = [xml](get-content $propsFile)      
+          #Get the suffix version 
+          $versionPrefix = $xml.Project.PropertyGroup.VersionPrefix
+          $versionPrefix = $versionSuffix.Trim()      
+        }  
+
+        $versionSuffix = '$(VersionSuffix)'
+        $useVersionSuffix = '$(UseVersionSuffix)'
+        Write-Host "Version Prefix: $versionPrefix, version suffix: $versionSuffix, use version suffix: $useVersionSuffix"
+
+        if ($useVersionSuffix -eq 'true' -and [string]::IsNullOrEmpty($versionSuffix) -eq $false) {
+          $version = $versionPrefix + "-" + $(VersionSuffix)
+        }
+        else {
+          $version = $versionPrefix
+        }  
+        #Setting output variable $Version (used for VSTS) 
+        Write-Host "##vso[task.setvariable variable=Version;isOutput=true]$(version)"    
+
   - task: DotNetCoreCLI@2
     displayName: 'dotnet test UnitTests'
     inputs:
