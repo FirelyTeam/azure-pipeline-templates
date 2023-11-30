@@ -127,7 +127,7 @@ jobs:
         Write-Host "Version Prefix: $versionPrefix, version suffix: $versionSuffix, use version suffix: $useVersionSuffix"
 
         if ($useVersionSuffix -eq 'true' -and [string]::IsNullOrEmpty($versionSuffix) -eq $false) {
-          $version = $versionPrefix + "-" + $(VersionSuffix)
+          $version = $versionPrefix + "-" + $versionSuffix
         }
         else {
           $version = $versionPrefix
