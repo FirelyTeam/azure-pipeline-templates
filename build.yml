@@ -114,26 +114,33 @@ jobs:
         [string]$versionPrefix = ''
         [string]$version = ''
 
-        if ([string]::IsNullOrEmpty($propsFile) -eq $false)
+        if ([string]::IsNullOrEmpty($propsFile) -eq $true)
         {
-          $xml = [xml](get-content $propsFile)      
-          #Get the suffix version 
-          $versionPrefix = $xml.Project.PropertyGroup.VersionPrefix
-          $versionPrefix = $versionPrefix.Trim()      
-        }  
+           Write-Host "No props file specified, not setting version output variable."
+           return
+        }
 
+        $xml = [xml](get-content $propsFile)      
+        #Get the suffix version 
+        $versionPrefix = $xml.Project.PropertyGroup.VersionPrefix
+        $versionPrefix = $versionPrefix.Trim()
         $versionSuffix = '$(VersionSuffix)'
         $useVersionSuffix = '$(UseVersionSuffix)'
+        
         Write-Host "Version Prefix: $versionPrefix, version suffix: $versionSuffix, use version suffix: $useVersionSuffix"
-
+        
         if ($useVersionSuffix -eq 'true' -and [string]::IsNullOrEmpty($versionSuffix) -eq $false) {
           $version = $versionPrefix + "-" + $versionSuffix
         }
         else {
           $version = $versionPrefix
-        }  
+        }
+        
         #Setting output variable $Version (used for VSTS) 
-        Write-Host "##vso[task.setvariable variable=Version;isOutput=true]$version"    
+        Write-Host "##vso[task.setvariable variable=Version;isOutput=true]$version" 
+         
+        
+             
 
   - task: DotNetCoreCLI@2
     displayName: 'dotnet test UnitTests'
