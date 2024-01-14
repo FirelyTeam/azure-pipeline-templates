@@ -6,7 +6,7 @@ parameters:
   nuGetSources: #--source https://www.myget.org/F/mappingengine/api/v3/index.json --source https://www.myget.org/F/vonk/api/v3/index.json 
 
 steps:
-  - task: NuGetAuthenticate@0
+  - task: NuGetAuthenticate@1
     inputs:
       nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
 
