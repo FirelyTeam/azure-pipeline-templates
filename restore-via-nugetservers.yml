@@ -8,7 +8,7 @@ parameters:
   
 
 steps:
-- task: NuGetAuthenticate@0
+- task: NuGetAuthenticate@1
   inputs:
     nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
 - task: DotNetCoreCLI@2
