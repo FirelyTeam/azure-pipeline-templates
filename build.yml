@@ -16,6 +16,8 @@ parameters:
   zipAfterPublish: false
   checkoutSubmodules: false  
   pool: {}
+  testFilter: '' # filter for unit tests; all tests by default
+  
 
 jobs:
 - job: Build
@@ -144,7 +146,7 @@ jobs:
     inputs:
       command: test
       projects: '**/*Tests/*Tests.csproj'
-      arguments: '--configuration $(buildConfiguration) --no-restore'
+      arguments: '--configuration $(buildConfiguration) --no-restore --filter ${parameters.testFilter}'
 
   - ${{ if eq(parameters.packageArtifacts, 'true') }}:
     - template: package.yml
