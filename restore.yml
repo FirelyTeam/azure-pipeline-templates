@@ -2,8 +2,8 @@
 # File: restore.yml
 
 parameters:
-  nuGetServiceConnections: #MappingEnginePackageCredentials, VonkPackageCredentials
-  nuGetSources: #--source https://www.myget.org/F/mappingengine/api/v3/index.json --source https://www.myget.org/F/vonk/api/v3/index.json 
+  nuGetServiceConnections: #service connetions to additional nuget feeds, not required 
+  nuGetSources:  #additional nuget sources, next to the default nuget.org feed, not required
 
 steps:
   - ${{if parameters.nuGetServiceConnections}}:
