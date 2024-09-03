@@ -2,13 +2,14 @@
 # File: restore.yml
 
 parameters:
-  nuGetServiceConnections: #MappingEnginePackageCredentials, VonkPackageCredentials
-  nuGetSources: #--source https://www.myget.org/F/mappingengine/api/v3/index.json --source https://www.myget.org/F/vonk/api/v3/index.json 
+  nuGetServiceConnections: #service connetions to additional nuget feeds, not required 
+  nuGetSources:  #additional nuget sources, next to the default nuget.org feed, not required
 
 steps:
-  - task: NuGetAuthenticate@1
-    inputs:
-      nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
+  - ${{if parameters.nuGetServiceConnections}}:
+    - task: NuGetAuthenticate@0
+      inputs:
+        nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
 
   - script: dotnet restore --source https://api.nuget.org/v3/index.json ${{ parameters.nuGetSources }}
     displayName: 'dotnet restore'
