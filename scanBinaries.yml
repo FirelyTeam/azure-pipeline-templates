@@ -22,5 +22,5 @@ jobs:
       cleanDestinationFolder: true
       overwriteExistingFiles: false
   - script: | 
-      docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp -v $(System.DefaultWorkingDirectory)/Binaries:/src  aquasec/trivy:latest  --exit-code 1 --format table --scanners vuln,config,secret filesystem /src
+      docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp -v $(System.DefaultWorkingDirectory)/Binaries:/src  aquasec/trivy:latest  --exit-code 1 --format table --scanners vuln,misconfig,secret filesystem /src
     displayName: Scan compiled code with Trivy
