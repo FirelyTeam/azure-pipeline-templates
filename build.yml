@@ -143,10 +143,19 @@ jobs:
 
   - task: DotNetCoreCLI@2
     displayName: 'dotnet test UnitTests'
+    condition: and(succeeded(), ne('${{ parameters.testFilter }}', ''))
     inputs:
       command: test
       projects: '**/*Tests/*Tests.csproj'
       arguments: '--configuration $(buildConfiguration) --no-restore --filter ${{ parameters.testFilter }}'
+
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet test UnitTests'
+    condition: and(succeeded(), eq('${{ parameters.testFilter }}', ''))
+    inputs:
+      command: test
+      projects: '**/*Tests/*Tests.csproj'
+      arguments: '--configuration $(buildConfiguration) --no-restore'
 
   - ${{ if eq(parameters.packageArtifacts, 'true') }}:
     - template: package.yml
