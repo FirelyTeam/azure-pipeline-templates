@@ -9,5 +9,29 @@ parameters:
 
 steps:
 - script: | 
-    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp -v ${{ parameters.directory }}:/src  aquasec/trivy:latest  --exit-code 1 --format table --scanners vuln,misconfig,secret filesystem /src
+    retries=10
+    count=0
+    while [ $count -lt $retries ]; do
+      log_output=$(docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp -v ${{ parameters.directory }}:/src  aquasec/trivy:latest  --exit-code 1 --format table --scanners vuln,misconfig,secret filesystem /src 2>&1)
+      result=$?
+      echo "$log_output"
+      if echo "$log_output" | grep -q "Fatal error	init error: DB error: failed to download vulnerability DB: database download error"; then
+        count=$((count + 1))
+        echo "Scan failed due to DB download error. Attempt $count/$retries. Retrying in 30 seconds..."
+        sleep 30
+      else
+        if [ $result -eq 0 ]; then
+          echo "Scan completed successfully."
+          break
+        else
+          echo "Scan failed due to other errors."
+          exit 1
+        fi
+      fi
+    done
+    if [ $count -eq $retries ]; then
+      echo "Scan failed after $retries attempts due to DB download error."
+      exit 1
+    fi
+      
   displayName: Scan compiled code with Trivy
