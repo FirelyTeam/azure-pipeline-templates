@@ -45,7 +45,7 @@ jobs:
         log_output=$(docker run --rm -v /var/run/docker.sock:/var/run/docker.sock  -v ${{ parameters.trivyIgnoreFile }}:/tmp/trivyignore aquasec/trivy:latest image --ignorefile /tmp/trivyignore --exit-code 1 --format table --scanners vuln,misconfig,secret  ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }} 2>&1)
         result=$?
         echo "$log_output"
-        if echo "$log_output" | grep -q "Fatal error	init error: DB error: failed to download vulnerability DB: database download error"; then
+        if echo "$log_output" | grep "Fatal" | grep "failed to download artifact from any source" | grep -q "failed to download vulnerability DB"; then
           count=$((count + 1))
           echo "Scan failed due to DB download error. Attempt $count/$retries. Retrying in 30 seconds..."
           sleep 30
