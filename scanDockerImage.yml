@@ -30,13 +30,12 @@ jobs:
     inputs:
       command: login
       containerRegistry: ${{ parameters.dockerRegistryConnection }}
-  - task: Docker@0
+  - task: Bash@3
     displayName: 'Pull Docker image from private registry'
     inputs:
-      containerregistrytype: 'Container Registry'
-      dockerRegistryConnection: ${{ parameters.dockerRegistryConnection }}
-      action: 'Run a Docker command'
-      customCommand: 'pull ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}'
+      targetType: inline
+      script: |
+        docker pull ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}
 
   - script: | 
       retries=10
