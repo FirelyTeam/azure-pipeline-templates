@@ -7,7 +7,7 @@ parameters:
 
 steps:
   - ${{if parameters.nuGetServiceConnections}}:
-    - task: NuGetAuthenticate@0
+    - task: NuGetAuthenticate@1
       inputs:
         nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
 
