@@ -6,9 +6,9 @@ parameters:
 - name: 'directory'
   type: 'string'
   displayName: 'The directory to scan for vulnerabilities' 
-  templatesDirectory: $(Pipeline.Workspace)/templates # Directory where the azure-pipeline-templates repo is checked out
 
 steps:
-  - script: |
-      ${{ parameters.templatesDirectory }}/scan_with_retries.sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp -v ${{ parameters.directory }}:/src  aquasec/trivy:latest  --exit-code 1 --format table --scanners vuln,misconfig,secret filesystem /src"
-    displayName: Scan compiled code with Trivy
+  - template: ./scanWithRetryTask.yml
+    parameters:
+      command: "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp -v ${{ parameters.directory }}:/src  aquasec/trivy:latest  --exit-code 1 --format table --scanners vuln,misconfig,secret filesystem /src"
+      displayName: Scan compiled code with Trivy
