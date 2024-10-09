@@ -1,13 +1,13 @@
 parameters: 
 - name: artifactName
   type: string 
-  display:  "name of the artifact on Azure DevOps that contains the Zip file"
+  displayName:  "name of the artifact on Azure DevOps that contains the Zip file"
 - name: zipFile
   type: string
-  display: "name or pattern of the zipfile to be extracted and scanned"
+  displayName: "name or pattern of the zipfile to be extracted and scanned"
 - name: trivyIgnoreFile
   type: string
-  display: "path to the trivy ignore file"
+  displayName: "path to the trivy ignore file"
   default: ''
 
 jobs:
