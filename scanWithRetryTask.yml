@@ -1,9 +1,20 @@
 parameters:
-  dockerExtraArguments: '' # Arguments for the docker command
-  trivyExtraArguments: ''  # Arguments for the trivy command
-  trivyIgnoreFile: ''      # Path to the trivy ignore file
-  displayName: 'Execute scan with retries'
-
+- name : dockerExtraArguments
+  type: string
+  default: ''
+  displayName: 'Arguments for the docker command'
+- name : trivyExtraArguments
+  type: string
+  default: ''
+  displayName: 'Arguments for the trivy command'
+- name: trivyIgnoreFile
+  type: string
+  default: ''
+  displayName: 'Path to the trivy ignore file'
+- name: displayName
+  type: string
+  default: 'Execute scan with retries'
+  display: 'The display name of the task'
 
 steps:
 - script: |
@@ -13,7 +24,7 @@ steps:
       mountArgs="-v ${{ parameters.trivyIgnoreFile }}:/tmp/trivyignore"
       echo "Using ignore file at ${{ parameters.trivyIgnoreFile }}"
     else 
-      mountArgs="-v /tmp:/tmp"
+      mountArgs=""
       echo "No ignore file specified."
     fi
     command="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock $mountArgs ${{ parameters.dockerExtraArguments }} aquasec/trivy:latest --exit-code 1 --format table --scanners vuln,misconfig,secret ${{ parameters.trivyExtraArguments }}"
