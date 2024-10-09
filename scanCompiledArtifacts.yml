@@ -12,6 +12,7 @@ parameters:
   displayName: 'The path to the trivy ignore file'
 
 steps:
+  - checkout: self
   - template: ./scanWithRetryTask.yml
     parameters:
       dockerExtraArguments: "-v ${{ parameters.directory }}/Binaries:/src"

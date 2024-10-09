@@ -16,7 +16,7 @@ jobs:
   pool: 
     vmImage: 'ubuntu-latest'
   steps:
-  - checkout: none
+  - checkout: self
   - task: DownloadPipelineArtifact@2
     displayName: Download ZipDeployArchive
     inputs:
