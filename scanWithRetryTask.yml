@@ -14,7 +14,7 @@ parameters:
 - name: displayName
   type: string
   default: 'Execute scan with retries'
-  display: 'The display name of the task'
+  displayName: 'The display name of the task'
 
 steps:
 - script: |
