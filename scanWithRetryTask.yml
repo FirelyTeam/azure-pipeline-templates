@@ -22,12 +22,14 @@ steps:
     count=0
     if [ -n "${{ parameters.trivyIgnoreFile }}" ]; then
       mountArgs="-v ${{ parameters.trivyIgnoreFile }}:/tmp/trivyignore"
+      ignoreFileArgs="--ignorefile /tmp/trivyignore"
       echo "Using ignore file at ${{ parameters.trivyIgnoreFile }}"
     else 
       mountArgs=""
+      ignoreFileArgs=""
       echo "No ignore file specified."
     fi
-    command="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock $mountArgs ${{ parameters.dockerExtraArguments }} aquasec/trivy:latest --exit-code 1 --format table --scanners vuln,misconfig,secret ${{ parameters.trivyExtraArguments }}"
+    command="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock $mountArgs ${{ parameters.dockerExtraArguments }} aquasec/trivy:latest $ignoreFileArgs --exit-code 1 --format table --scanners vuln,misconfig,secret ${{ parameters.trivyExtraArguments }}"
     
     echo "Executing '$command' with retries..."
     while [ $count -lt $retries ]; do
