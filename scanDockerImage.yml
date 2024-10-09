@@ -41,7 +41,7 @@ jobs:
   - template: ./scanWithRetryTask.yml
     parameters:
       dockerExtraArguments: ""
-      trivyExtraArguments: "${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}"
+      trivyExtraArguments: "image ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}"
       trivyIgnoreFile: ${{ parameters.trivyIgnoreFile }}
       displayName: Scan image with Trivy
 
