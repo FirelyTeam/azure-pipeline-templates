@@ -1,7 +1,8 @@
 parameters: 
   artifactName:  # name of the artifact on Azure DevOps that contains the Zip file                         
   zipfile: # name or pattern of the zipfile to be extracted and scanned
-  
+  templatesDirectory: $(Pipeline.Workspace)/templates # Directory where the azure-pipeline-templates repo is checked out
+
 jobs:
 - job: scan  
   displayName: Scan binaries
@@ -21,29 +22,7 @@ jobs:
       destinationFolder: $(System.DefaultWorkingDirectory)/Binaries   
       cleanDestinationFolder: true
       overwriteExistingFiles: false
-  - script: | 
-      retries=10
-      count=0
-      while [ $count -lt $retries ]; do
-        log_output=$(docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp -v $(System.DefaultWorkingDirectory)/Binaries:/src aquasec/trivy:latest --exit-code 1 --format table --scanners vuln,misconfig,secret filesystem /src 2>&1)
-        result=$?
-        echo "$log_output"
-        if echo "$log_output" | grep "Fatal" | grep "failed to download artifact from any source" | grep -q "failed to download vulnerability DB"; then
-          count=$((count + 1))
-          echo "Scan failed due to DB download error. Attempt $count/$retries. Retrying in 30 seconds..."
-          sleep 30
-        else
-          if [ $result -eq 0 ]; then
-            echo "Scan completed successfully."
-            break
-          else
-            echo "Scan failed due to other errors."
-            exit 1
-          fi
-        fi
-      done
-      if [ $count -eq $retries ]; then
-        echo "Scan failed after $retries attempts due to DB download error."
-        exit 1
-      fi
+  - script: |
+      ${{ parameters.templatesDirectory }}/scan_with_retries.sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp -v $(System.DefaultWorkingDirectory)/Binaries:/src aquasec/trivy:latest --exit-code 1 --format table --scanners vuln,misconfig,secret filesystem /src"
     displayName: Scan compiled code with Trivy
+
