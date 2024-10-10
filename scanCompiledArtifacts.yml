@@ -6,9 +6,16 @@ parameters:
 - name: 'directory'
   type: 'string'
   displayName: 'The directory to scan for vulnerabilities' 
+- name: 'trivyIgnoreFile'
+  type: 'string'
+  default: ''
+  displayName: 'The path to the trivy ignore file'
 
 steps:
+  - checkout: self
   - template: ./scanWithRetryTask.yml
     parameters:
-      command: "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp -v ${{ parameters.directory }}:/src  aquasec/trivy:latest  --exit-code 1 --format table --scanners vuln,misconfig,secret filesystem /src"
+      dockerExtraArguments: "-v ${{ parameters.directory }}/Binaries:/src"
+      trivyExtraArguments: "filesystem /src"
+      trivyIgnoreFile: ${{ parameters.trivyIgnoreFile }}
       displayName: Scan compiled code with Trivy

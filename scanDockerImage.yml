@@ -40,7 +40,9 @@ jobs:
 
   - template: ./scanWithRetryTask.yml
     parameters:
-      command: "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock  -v ${{ parameters.trivyIgnoreFile }}:/tmp/trivyignore aquasec/trivy:latest image --ignorefile /tmp/trivyignore --exit-code 1 --format table --scanners vuln,misconfig,secret  ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}"
+      dockerExtraArguments: ""
+      trivyExtraArguments: "image ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}"
+      trivyIgnoreFile: ${{ parameters.trivyIgnoreFile }}
       displayName: Scan image with Trivy
 
 #  The Trivy task does not work yet.

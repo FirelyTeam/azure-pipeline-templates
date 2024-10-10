@@ -1,21 +1,47 @@
 parameters:
-  command: ''  # Command to be executed with retries
-  displayName: 'Execute scan with retries'
+- name : dockerExtraArguments
+  type: string
+  default: ''
+  displayName: 'Arguments for the docker command'
+- name : trivyExtraArguments
+  type: string
+  default: ''
+  displayName: 'Arguments for the trivy command'
+- name: trivyIgnoreFile
+  type: string
+  default: ''
+  displayName: 'Path to the trivy ignore file'
+- name: displayName
+  type: string
+  default: 'Execute scan with retries'
+  displayName: 'The display name of the task'
 
 steps:
 - script: |
     retries=10
     count=0
-    echo "Executing '${{ parameters.command }}' with retries..."
+    if [ -n "${{ parameters.trivyIgnoreFile }}" ]; then
+      mountArgs="-v ${{ parameters.trivyIgnoreFile }}:/tmp/trivyignore"
+      ignoreFileArgs="--ignorefile /tmp/trivyignore"
+      echo "Using ignore file at ${{ parameters.trivyIgnoreFile }}"
+    else 
+      mountArgs=""
+      ignoreFileArgs=""
+      echo "No ignore file specified."
+    fi
+    command="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock $mountArgs ${{ parameters.dockerExtraArguments }} aquasec/trivy:latest $ignoreFileArgs --exit-code 1 --format table --scanners vuln,misconfig,secret ${{ parameters.trivyExtraArguments }}"
+    
+    echo "Executing '$command' with retries..."
     while [ $count -lt $retries ]; do
-      log_output=$(${{ parameters.command }} 2>&1)
+      log_output=$($command 2>&1)
+      exit_code=$?
       echo "$log_output"
       if echo "$log_output" | grep "Fatal" | grep "failed to download artifact from any source" | grep -q "failed to download vulnerability DB"; then
         count=$((count + 1))
         echo "Scan failed due to DB download error. Attempt $count/$retries. Retrying in 30 seconds..."
         sleep 30
       else
-        if [ $? -eq 0 ]; then
+        if [ $exit_code -eq 0 ]; then
           echo "Scan completed successfully."
           break
         else
