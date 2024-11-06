@@ -8,13 +8,15 @@ parameters:
     default: 'Execute scan with retries'
     displayName: 'Retain Build if succeeded'
 
-variables:
-  - name: isReleaseTag
-    value: $[startswith(variables['Build.SourceBranch'], 'refs/tags/v')]
-
 steps:
+  - powershell: |
+      $isReleaseTag = $($env:BUILD_SOURCEBRANCH -like 'refs/tags/v*')
+      Write-Host "isReleaseTag: $isReleaseTag"
+      Write-Host "##vso[task.setvariable variable=isReleaseTag]$isReleaseTag"
+    displayName: 'Check if release'
+
   - task: PowerShell@2
-    condition: and(and(succeeded(), not(canceled())), eq(variables['isReleaseTag'], false))
+    condition: and(and(succeeded(), not(canceled())), eq(variables['isReleaseTag'], true))
     name: RetainReleaseBuild
     displayName: ${{ parameters.displayName }}
     inputs:
