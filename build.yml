@@ -13,9 +13,6 @@ parameters:
 - name: useVersionSuffix
   type: boolean
   default: true
-- name: useVersionSuffix
-  type: boolean
-  default: true
 - name: propsFile
   type: string
   default: '' # used for versionSuffix, if not empty, the versionSuffix will be read from the props file
