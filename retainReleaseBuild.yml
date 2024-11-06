@@ -8,7 +8,8 @@ parameters:
 steps:
   - powershell: |
       Write-Host "branch: ${env:BUILD_SOURCEBRANCH}"
-      $isReleaseTag = $($env:BUILD_SOURCEBRANCH -like 'refs/tags/v*')
+      # $isReleaseTag = $($env:BUILD_SOURCEBRANCH -like 'refs/tags/v*')
+      $isReleaseTag = $env:BUILD_SOURCEBRANCH -like 'refs/heads/feature/*'
       Write-Host "isReleaseTag: $isReleaseTag"
       Write-Host "##vso[task.setvariable variable=isReleaseTag]$isReleaseTag"
     displayName: 'Check if release'
