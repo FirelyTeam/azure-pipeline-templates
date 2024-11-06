@@ -205,8 +205,7 @@ jobs:
         versionSuffix: $(VersionSuffix)
 
   # Retain the build if it is a release build
-  - ${{ if startswith(variables['Build.SourceBranch'], 'refs/tags/v') }}:
-    - template: retainBuild.yml
-      parameters:
-        numberOfDaysRetainment: ${{ parameters.numberOfDaysRetainmentForReleaseBuild }}
+  - template: retainReleaseBuild.yml
+    parameters:
+      numberOfDaysRetainment: ${{ parameters.numberOfDaysRetainmentForReleaseBuild }}
   
