@@ -3,13 +3,11 @@ parameters:
     type: string
     default: 365
     displayName: 'Number of days to retain the build'
-  - name: displayName
-    type: string
-    default: 'Execute scan with retries'
-    displayName: 'Retain Build if succeeded'
+ 
 
 steps:
   - powershell: |
+      Write-Host "branch: ${env:BUILD_SOURCEBRANCH}"
       $isReleaseTag = $($env:BUILD_SOURCEBRANCH -like 'refs/tags/v*')
       Write-Host "isReleaseTag: $isReleaseTag"
       Write-Host "##vso[task.setvariable variable=isReleaseTag]$isReleaseTag"
@@ -17,7 +15,7 @@ steps:
 
   - task: PowerShell@2
     condition: and(and(succeeded(), not(canceled())), eq(variables['isReleaseTag'], true))
-    displayName: ${{ parameters.displayName }}
+    displayName: 'Retain Build if release'
     inputs:
       failOnStderr: true
       targetType: 'inline'
