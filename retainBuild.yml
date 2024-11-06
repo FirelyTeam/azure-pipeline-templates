@@ -1,6 +1,6 @@
 parameters:
   - name: numberOfDaysRetainment
-    type: number
+    type: string
     default: 365
     displayName: 'Number of days to retain the build'
   - name: displayName
