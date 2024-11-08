@@ -11,7 +11,7 @@ parameters:
 
 steps:
   - powershell: |
-      Write-Host "branch: ${env:BUILD_SOURCEBRANCH}"
+      Write-Host "variables['Build.SourceBranch']: ${{ variables['Build.SourceBranch'] }}"
       Write-Host "${{ parameters.condition }}"
     displayName: 'Display condition'
 
