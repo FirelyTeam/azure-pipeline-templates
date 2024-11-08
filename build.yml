@@ -50,8 +50,8 @@ parameters:
   type: number
   default: 365 # number of days to retain the build
 - name: isReleaseBuild
-  type: boolean
-  default: false # if true, the build will be retained for the provided duration
+  type: string
+  default: false # if evaluated to true, the build will be retained for the provided duration
 
 jobs:
 - job: Build
@@ -210,4 +210,4 @@ jobs:
   - template: retainBuild.yml
     parameters:
       numberOfDaysRetainment: ${{ parameters.numberOfDaysRetainmentForReleaseBuild }}
-      condition: and(succeeded(), eq(parameters.isRelease, 'true'))
+      condition: and(succeeded(), eq(${{ parameters.isReleaseBuild }}, 'true'))
