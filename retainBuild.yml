@@ -3,18 +3,21 @@ parameters:
     type: string
     default: 365
     displayName: 'Number of days to retain the build'
+  - name: condition
+    type: boolean
+    default: false
+    displayName: 'Condition for retaining the build for the provided duration'
+
 
 steps:
   - powershell: |
       Write-Host "branch: ${env:BUILD_SOURCEBRANCH}"
-      $isReleaseTag = $($env:BUILD_SOURCEBRANCH -like 'refs/tags/v*')
-      Write-Host "isReleaseTag: $isReleaseTag"
-      Write-Host "##vso[task.setvariable variable=isReleaseTag]$isReleaseTag"
-    displayName: 'Check if release'
+      Write-Host "{{ parameters.condition }}"
+    displayName: 'Display condition'
 
   - task: PowerShell@2
-    condition: and(and(succeeded(), not(canceled())), eq(variables['isReleaseTag'], true))
-    displayName: 'Retain Build if release'
+    condition: eq('${{ parameters.condition }}', 'true')
+    displayName: 'Retain Build'
     inputs:
       failOnStderr: true
       targetType: 'inline'

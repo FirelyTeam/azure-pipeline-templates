@@ -49,7 +49,9 @@ parameters:
 - name: numberOfDaysRetainmentForReleaseBuild
   type: number
   default: 365 # number of days to retain the build
-
+- name: isReleaseBuild
+  type: boolean
+  default: false # if true, the build will be retained for the provided duration
 
 jobs:
 - job: Build
@@ -205,7 +207,7 @@ jobs:
         versionSuffix: $(VersionSuffix)
 
   # Retain the build if it is a release build
-  - template: retainReleaseBuild.yml
+  - template: retainBuild.yml
     parameters:
       numberOfDaysRetainment: ${{ parameters.numberOfDaysRetainmentForReleaseBuild }}
-  
+      condition: and(succeeded(), eq(parameters.isRelease, 'true'))
