@@ -12,7 +12,7 @@ parameters:
 steps:
   - powershell: |
       Write-Host "branch: ${env:BUILD_SOURCEBRANCH}"
-      Write-Host "{{ parameters.condition }}"
+      Write-Host "${{ parameters.condition }}"
     displayName: 'Display condition'
 
   - task: PowerShell@2
