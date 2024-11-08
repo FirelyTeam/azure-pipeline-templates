@@ -4,8 +4,8 @@ parameters:
     default: 365
     displayName: 'Number of days to retain the build'
   - name: condition
-    type: boolean
-    default: false
+    type: string
+    default: 'false'
     displayName: 'Condition for retaining the build for the provided duration'
 
 
