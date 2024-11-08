@@ -51,7 +51,7 @@ parameters:
   default: 365 # number of days to retain the build
 - name: isReleaseBuild
   type: string
-  default: false # if evaluated to true, the build will be retained for the provided duration
+  default: startswith(variables['Build.SourceBranch'], 'refs/tags/v') # if evaluated to true, the build will be retained for the provided duration
 
 jobs:
 - job: Build
@@ -64,6 +64,12 @@ jobs:
   - ${{ if eq(parameters.checkoutSubmodules, 'true') }}:
     - checkout: self
       submodules: true
+
+ # TODO: remove when working
+  - template: retainBuild.yml
+    parameters:
+      numberOfDaysRetainment: ${{ parameters.numberOfDaysRetainmentForReleaseBuild }}
+      condition: and(succeeded(), eq(${{ parameters.isReleaseBuild }}, 'false'))
 
   ## retrieve the version suffix from the props file and set it as a variable
   - powershell: |
