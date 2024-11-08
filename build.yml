@@ -52,7 +52,7 @@ parameters:
 - name: isReleaseBuild
   type: string
   # default: startswith(variables['Build.SourceBranch'], 'refs/tags/v') # if evaluated to true, the build will be retained for the provided duration
-  default: startswith(variables['Build.SourceBranch'], 'refs/heads/dev) # if evaluated to true, the build will be retained for the provided duration
+  default: startswith(variables['Build.SourceBranch'], 'refs/heads/dev') # if evaluated to true, the build will be retained for the provided duration
 
 jobs:
 - job: Build
