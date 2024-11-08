@@ -1,0 +1,30 @@
+parameters:
+  - name: numberOfDaysRetainment
+    type: string
+    default: 365
+    displayName: 'Number of days to retain the build'
+  - name: condition
+    type: string
+    default: 'false'
+    displayName: 'Condition for retaining the build for the provided duration'
+
+
+steps:
+  - powershell: |
+      Write-Host "variables['Build.SourceBranch']: ${{ variables['Build.SourceBranch'] }}"
+      Write-Host "${{ parameters.condition }}"
+    displayName: 'Display condition'
+
+  - task: PowerShell@2
+    condition: eq(${{ parameters.condition }}, 'true')
+    displayName: 'Retain Build'
+    inputs:
+      failOnStderr: true
+      targetType: 'inline'
+      script: |
+        $contentType = "application/json";
+        $headers = @{ Authorization = 'Bearer $(System.AccessToken)' };
+        $rawRequest = @{ daysValid = ${{ parameters.numberOfDaysRetainment }}; definitionId = $(System.DefinitionId); ownerId = 'User:$(Build.RequestedForId)'; protectPipeline = $false; runId = $(Build.BuildId) };
+        $request = ConvertTo-Json @($rawRequest);
+        $uri = "$(System.CollectionUri)$(System.TeamProject)/_apis/build/retention/leases?api-version=6.0-preview.1";
+        Invoke-RestMethod -uri $uri -method POST -Headers $headers -ContentType $contentType -Body $request;

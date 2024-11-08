@@ -3,21 +3,55 @@
 
 parameters:
   # Default values
-  dotNetCoreVersion: '3.1.102' # can also be use with wildcards:  latest minor version of 3. , use '3.x'
-  useVersionSuffix: true # if true, the build number will be added as or to the existing version suffix
-  propsFile: '' # used for versionSuffix, if not empty, the versionSuffix will be read from the props file
-  restoreDependencies: false
-  nuGetServiceConnections: # service connections to use for nuget feeds
-  nuGetSources: # sources to check for dependencies, other than the normal nuget.org feed
-  packageArtifacts: false
-  publishArtifacts: false
-  packageArtifactName: 'NuGetPackages'
-  publishWebProjects: false
-  zipAfterPublish: false
-  checkoutSubmodules: false  
-  pool: {}
-  testFilter: '' # filter for unit tests; all tests by default
-  
+- name : dotNetCoreVersion
+  type: string
+  default: '3.1.102' # can also be use with wildcards:  latest minor version of 3. , use '3.x'
+  displayName: 'dotnet core version'
+- name: useVersionSuffix
+  type: boolean
+  default: true  # if true, the build number will be added as or to the existing version suffix
+- name: propsFile
+  type: string
+  default: '' # used for versionSuffix, if not empty, the versionSuffix will be read from the props file
+- name: restoreDependencies
+  type: boolean
+  default: false
+- name: nuGetServiceConnections
+  type: string
+  default: '' # Service connection credentials for feeds outside this organization. 
+- name: nuGetSources
+  type: string
+  default: --source https://nuget.pkg.github.com/FirelyTeam/index.json # sources to check for dependencies, other than the normal nuget.org feed
+- name: packageArtifacts
+  type: boolean
+  default: false
+- name: publishArtifacts
+  type: boolean
+  default: false
+- name: packageArtifactName
+  type: string
+  default: 'NuGetPackages'
+- name: publishWebProjects
+  type: boolean
+  default: false
+- name: zipAfterPublish
+  type: boolean
+  default: false
+- name: checkoutSubmodules
+  type: boolean
+  default: false
+- name: pool
+  type: object
+  default: {}
+- name: testFilter
+  type: string
+  default: '' # filter for unit tests; all tests by default
+- name: numberOfDaysRetainmentForReleaseBuild
+  type: number
+  default: 365 # number of days to retain the build
+- name: isReleaseBuildExpression
+  type: string
+  default: startswith(variables['Build.SourceBranch'], 'refs/tags/v') # if evaluated to true, the build will be retained for the provided duration
 
 jobs:
 - job: Build
@@ -171,3 +205,9 @@ jobs:
         publishWebProjects: ${{ parameters.publishWebProjects }}
         zipAfterPublish: ${{ parameters.zipAfterPublish }}
         versionSuffix: $(VersionSuffix)
+
+  # Retain the build if it is a release build
+  - template: retainBuild.yml
+    parameters:
+      numberOfDaysRetainment: ${{ parameters.numberOfDaysRetainmentForReleaseBuild }}
+      condition: and(succeeded(), ${{ parameters.isReleaseBuildExpression }})
