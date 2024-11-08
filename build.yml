@@ -217,4 +217,4 @@ jobs:
   - template: retainBuild.yml
     parameters:
       numberOfDaysRetainment: ${{ parameters.numberOfDaysRetainmentForReleaseBuild }}
-      condition: and(succeeded(), ${{ parameters.isReleaseBuild })
+      condition: and(succeeded(), ${{ parameters.isReleaseBuild }})
