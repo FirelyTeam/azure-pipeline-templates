@@ -24,7 +24,7 @@ stages:
   - name : trivyCacheBlobName
     value: 'trivy-cache.zip'
   - name: localTrivyCachePath
-    value: $(Agent.TempDirectory)/trivy-db
+    value: $(Agent.TempDirectory)/trivy-cache
   - name: trivyCacheZipPath
     value: $(Agent.TempDirectory)/trivy-cache.zip
   - name: localEmptyDir
@@ -68,7 +68,7 @@ stages:
           echo "Creating zip file '$trivyCacheZipPath' containing Trivy cache..."
           zip -r "$trivyCacheZipPath" "$localTrivyCachePath"
           
-          Write-Host "Uploading $trivyCacheZipPath to container '${{ variables.trivyCacheContainer }}' in blob storage account '$(TrivyCacheStorageAccount)'"
+          echo "Uploading $trivyCacheZipPath to container '${{ variables.trivyCacheContainer }}' in blob storage account '$(TrivyCacheStorageAccount)'"
           az storage blob upload \
             --account-name $(TrivyCacheStorageAccount) \
             --container-name ${{ variables.trivyCacheContainer }} \

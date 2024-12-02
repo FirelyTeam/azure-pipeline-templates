@@ -53,7 +53,7 @@ jobs:
       displayName: Scan image with Trivy
       trivyCacheAzureSubscription: ${{ parameters.trivyCacheAzureSubscription }}
       trivyCacheStorageAccount: ${{ parameters.trivyCacheStorageAccount }}
-      localTrivyCachePath: $(Agent.TempDirectory)/trivy-db
+      localTrivyCachePath: $(Agent.TempDirectory)/trivy-cache
 
 #  The Trivy task does not work yet.
 #    - task: trivy@1

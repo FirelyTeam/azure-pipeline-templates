@@ -14,11 +14,11 @@ parameters:
 - name : trivyCacheBlobName
   type: string
   default: 'trivy-cache.zip'
-  displayName: 'Name of the Zip file containing the Trivy vulnerability DB cache'
+  displayName: 'Name of the Zip file containing the Trivy cache'
 - name: localTrivyCachePath
   type: string
-  default: $(Agent.TempDirectory)/trivy-db
-  displayName: 'Folder path containing the Trivy vulnerability DB cache'
+  default: $(Agent.TempDirectory)/trivy-cache
+  displayName: 'Folder path containing the Trivy cache'
 - name : dockerExtraArguments
   type: string
   default: ''
