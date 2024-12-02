@@ -93,8 +93,14 @@ steps:
     fi
     localCacheMountArgs="-v ${{ parameters.localTrivyDbPath }}:/mnt/trivy/cache"
     localCacheTrivyArgs="--cache-dir /mnt/trivy/cache"
+    # If the cache folder is not empty, use the offline mode
+    if [ -z "$( ls -A '${{ parameters.localTrivyDbPath }}' )" ]; then
+      offlineTrivyArgs="--offline"
+    else
+      offlineTrivyArgs=""
+    fi
     
-    command="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock $ignoreMountArgs $localCacheMountArgs ${{ parameters.dockerExtraArguments }} aquasec/trivy:latest $ignoreFileTrivyArgs $localCacheTrivyArgs --exit-code 1 --format table --scanners vuln,misconfig,secret ${{ parameters.trivyExtraArguments }}"
+    command="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock $ignoreMountArgs $localCacheMountArgs ${{ parameters.dockerExtraArguments }} aquasec/trivy:latest $ignoreFileTrivyArgs $localCacheTrivyArgs $offlineTrivyArgs --exit-code 1 --format table --scanners vuln,misconfig,secret ${{ parameters.trivyExtraArguments }}"
     
     echo "Executing '$command' with retries..."
     while [ $count -lt $retries ]; do
