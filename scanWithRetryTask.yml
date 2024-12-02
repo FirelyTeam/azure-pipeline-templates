@@ -37,11 +37,11 @@ parameters:
   displayName: 'The display name of the task'
 
 steps:
-- ${{ if ne(parameters.azureSubscriptionForTrivy, '') }}:
+- ${{ if ne(parameters.trivyCacheAzureSubscription, '') }}:
   - task: AzureCLI@2
     displayName: 'Retrieve Trivy cache'
     inputs:
-      azureSubscription: ${{ parameters.azureSubscriptionForTrivy }}
+      azureSubscription: ${{ parameters.trivyCacheAzureSubscription }}
       scriptType: bash
       scriptLocation: inlineScript
       inlineScript: |
