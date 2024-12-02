@@ -91,7 +91,7 @@ steps:
       ignoreFileTrivyArgs=""
       echo "No ignore file specified."
     fi
-    localCacheMountArgs="-v ${{ variables.localTrivyDbPath }}:/mnt/trivy/cache"
+    localCacheMountArgs="-v ${{ parameters.localTrivyDbPath }}:/mnt/trivy/cache"
     localCacheTrivyArgs="--cache-dir /mnt/trivy/cache"
     
     command="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock $ignoreMountArgs $localCacheMountArgs ${{ parameters.dockerExtraArguments }} aquasec/trivy:latest $ignoreFileTrivyArgs $localCacheTrivyArgs --exit-code 1 --format table --scanners vuln,misconfig,secret ${{ parameters.trivyExtraArguments }}"
