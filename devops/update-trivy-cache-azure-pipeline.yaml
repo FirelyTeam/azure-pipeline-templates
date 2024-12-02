@@ -1,5 +1,6 @@
 # File: devops/update-trivy-cache-azure-pipeline.yaml
 # This pipeline downloads the latest Trivy vulnerability database and stores it in an Azure Blob Storage container.
+# Need to set the variables $(AzureSubscription) and $(TrivyCacheStorageAccount) in the pipeline on dev.azure.com
 
 schedules:
 - cron: '0 2 * * 1-5'
@@ -16,10 +17,6 @@ stages:
 - stage: deployTrivyCache
   displayName: 'Deploy latest Trivy vulnerability database'
   variables:
-  - name: azureSubscription
-    value: $(AzureSubscription) # Set as variable in the pipeline on dev.azure.com
-  - name: trivyCacheStorageAccount
-    value: $(TrivyCacheStorageAccount) # Set as variable in the pipeline on dev.azure.com
   - name: trivyVulnerabilityDbContainer
     value: 'trivy-vulnerability-db-cache'
   - name: trivyVulnerabilityDbZipName
@@ -59,7 +56,7 @@ stages:
     - task: AzureCLI@2
       displayName: 'Deploy Trivy cache'
       inputs:
-        azureSubscription: ${{ variables.azureSubscription }}
+        azureSubscription: $(AzureSubscription)
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
@@ -73,7 +70,7 @@ stages:
           
           Write-Host "Uploading $trivyCacheZipPath to container '${{ variables.trivyCacheContainerName }}' in blob storage account '${{ variables.trivyCacheStorageAccount }}'"
           az storage blob upload \
-            --account-name ${{ variables.trivyCacheStorageAccount }} \
+            --account-name $(TrivyCacheStorageAccount) \
             --container-name ${{ variables.trivyCacheContainerName }} \
             --name ${{ variables.trivyCacheBlobName }} \
             --file $trivyCacheZipPath \
