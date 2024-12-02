@@ -26,10 +26,6 @@ parameters:
   type: string
   default: 'trivy-db.zip'
   displayName: 'Name of the Zip file containing the Trivy vulnerability DB cache'
-- name: localTrivyDbPath
-  type: string
-  default: $(Agent.TempDirectory)/trivy-db
-  displayName: 'Folder path containing the Trivy vulnerability DB cache'
 
 steps:
   - checkout: self
@@ -43,4 +39,4 @@ steps:
       trivyCacheStorageAccountName: ${{ parameters.trivyCacheStorageAccountName }}
       trivyCacheContainerName: ${{ parameters.trivyCacheContainerName }}
       trivyCacheBlobName: ${{ parameters.trivyCacheBlobName }}
-      localTrivyDbPath: ${{ parameters.localTrivyDbPath }}
+      localTrivyDbPath: $(Agent.TempDirectory)/trivy-db
