@@ -74,6 +74,7 @@ stages:
             --container-name ${{ variables.trivyCacheContainer }} \
             --name ${{ variables.trivyCacheBlobName }} \
             --file $trivyCacheZipPath \
+            --overwrite \
             --auth-mode login
           if [ $? -ne 0 ]; then
             echo "Failed to upload Trivy cache."

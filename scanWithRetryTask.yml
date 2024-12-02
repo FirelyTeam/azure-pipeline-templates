@@ -91,6 +91,8 @@ steps:
       ignoreFileTrivyArgs=""
       echo "No ignore file specified."
     fi
+    echo "Using local cache at ${{ parameters.localTrivyCachePath }}: "
+    ls -al ${{ parameters.localTrivyCachePath }}
     localCacheMountArgs="-v ${{ parameters.localTrivyCachePath }}:/mnt/trivy/cache"
     localCacheTrivyArgs="--cache-dir /mnt/trivy/cache"
     # If the cache folder is not empty, use the offline mode
