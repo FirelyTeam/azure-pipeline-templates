@@ -28,4 +28,4 @@ steps:
       displayName: Scan compiled code with Trivy
       trivyCacheAzureSubscription: ${{ parameters.trivyCacheAzureSubscription }}
       trivyCacheStorageAccount: ${{ parameters.trivyCacheStorageAccount }}
-      localTrivyDbPath: $(Agent.TempDirectory)/trivy-db
+      localTrivyCachePath: $(Agent.TempDirectory)/trivy-db

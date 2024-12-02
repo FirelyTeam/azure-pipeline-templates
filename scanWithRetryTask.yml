@@ -15,7 +15,7 @@ parameters:
   type: string
   default: 'trivy-db.zip'
   displayName: 'Name of the Zip file containing the Trivy vulnerability DB cache'
-- name: localTrivyDbPath
+- name: localTrivyCachePath
   type: string
   default: $(Agent.TempDirectory)/trivy-db
   displayName: 'Folder path containing the Trivy vulnerability DB cache'
@@ -58,7 +58,7 @@ steps:
           echo "Trivy cache blob name is not provided."
           exit 1
         fi
-        if [ -z "${{ parameters.localTrivyDbPath }}" ]; then
+        if [ -z "${{ parameters.localTrivyCachePath }}" ]; then
           echo "Local Trivy DB path is not provided."
           exit 1
         fi
@@ -71,14 +71,14 @@ steps:
           --auth-mode login
 
         echo "Unzipping blob..."
-        unzip -o $(Agent.TempDirectory)/${{ parameters.trivyCacheBlobName }} -d ${{ parameters.localTrivyDbPath }}
+        unzip -o $(Agent.TempDirectory)/${{ parameters.trivyCacheBlobName }} -d ${{ parameters.localTrivyCachePath }}
         echo "Blob retrieved and unzipped successfully."
 
 
 - script: |
     retries=10
     count=0
-    if [ -z "${{ parameters.localTrivyDbPath }}" ]; then
+    if [ -z "${{ parameters.localTrivyCachePath }}" ]; then
           echo "Local Trivy DB path is not provided."
           exit 1
         fi
@@ -91,10 +91,10 @@ steps:
       ignoreFileTrivyArgs=""
       echo "No ignore file specified."
     fi
-    localCacheMountArgs="-v ${{ parameters.localTrivyDbPath }}:/mnt/trivy/cache"
+    localCacheMountArgs="-v ${{ parameters.localTrivyCachePath }}:/mnt/trivy/cache"
     localCacheTrivyArgs="--cache-dir /mnt/trivy/cache"
     # If the cache folder is not empty, use the offline mode
-    if [ -z "$( ls -A '${{ parameters.localTrivyDbPath }}' )" ]; then
+    if [ -z "$( ls -A '${{ parameters.localTrivyCachePath }}' )" ]; then
       echo "Local cache is empty."
       offlineTrivyArgs=""
     else
