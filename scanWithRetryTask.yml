@@ -3,7 +3,7 @@ parameters:
   type: string
   default: ''
   displayName: 'Subscription used to retrieve Trivy cache. If left empty, no cache will be used.'
-- name : trivyCacheStorageAccountName
+- name : trivyCacheStorageAccount
   type: string
   default: ''
   displayName: 'Storage account name where the Trivy cache is stored'
@@ -46,7 +46,7 @@ steps:
       scriptLocation: inlineScript
       inlineScript: |
         echo "Checking provided parameters..."
-        if [ -z "${{ parameters.trivyCacheStorageAccountName }}" ]; then
+        if [ -z "${{ parameters.trivyCacheStorageAccount }}" ]; then
           echo "Trivy cache storage account name is not provided."
           exit 1
         fi
@@ -64,7 +64,7 @@ steps:
         fi
         echo "Retrieving blob storage..."
         az storage blob download \
-          --account-name ${{ parameters.trivyCacheStorageAccountName }} \
+          --account-name ${{ parameters.trivyCacheStorageAccount }} \
           --container-name ${{ parameters.trivyCacheContainerName }} \
           --name ${{ parameters.trivyCacheBlobName }} \
           --file ${{ parameters.destinationPath }}/${{ parameters.trivyCacheBlobName }} \

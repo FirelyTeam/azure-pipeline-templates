@@ -13,7 +13,7 @@ parameters:
   type: string
   default: ''
   displayName: 'Subscription used to retrieve Trivy cache. If left empty, no cache will be used.'
-- name : trivyCacheStorageAccountName
+- name : trivyCacheStorageAccount
   type: string
   default: ''
   displayName: 'Storage account name where the Trivy cache is stored'
@@ -44,5 +44,5 @@ jobs:
       trivyIgnoreFile: ${{ parameters.trivyIgnoreFile }}
       displayName: Scan compiled code with Trivy
       trivyCacheAzureSubscription: ${{ parameters.trivyCacheAzureSubscription }}
-      trivyCacheStorageAccountName: ${{ parameters.trivyCacheStorageAccountName }}
+      trivyCacheStorageAccount: ${{ parameters.trivyCacheStorageAccount }}
       localTrivyDbPath: $(Agent.TempDirectory)/trivy-db
