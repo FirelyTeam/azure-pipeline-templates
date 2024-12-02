@@ -9,7 +9,7 @@ parameters:
   displayName: 'Storage account name where the Trivy cache is stored'
 - name : trivyCacheContainerName
   type: string
-  default: ''
+  default: 'trivy-vulnerability-db-cache'
   displayName: 'Container name where the Trivy cache is stored'
 - name : trivyCacheBlobName
   type: string

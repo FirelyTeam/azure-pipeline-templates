@@ -27,14 +27,6 @@ parameters:
   type: string
   default: ''
   displayName: 'Storage account name where the Trivy cache is stored'
-- name : trivyCacheContainerName
-  type: string
-  default: ''
-  displayName: 'Container name where the Trivy cache is stored'
-- name : trivyCacheBlobName
-  type: string
-  default: 'trivy-db.zip'
-  displayName: 'Name of the Zip file containing the Trivy vulnerability DB cache'
 
 jobs:
 - job: scanDockerImage
@@ -61,8 +53,6 @@ jobs:
       displayName: Scan image with Trivy
       trivyCacheAzureSubscription: ${{ parameters.trivyCacheAzureSubscription }}
       trivyCacheStorageAccountName: ${{ parameters.trivyCacheStorageAccountName }}
-      trivyCacheContainerName: ${{ parameters.trivyCacheContainerName }}
-      trivyCacheBlobName: ${{ parameters.trivyCacheBlobName }}
       localTrivyDbPath: $(Agent.TempDirectory)/trivy-db
 
 #  The Trivy task does not work yet.
