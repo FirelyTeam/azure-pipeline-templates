@@ -99,7 +99,7 @@ steps:
       offlineTrivyArgs=""
     else
       echo "Local cache is not empty, running in offline mode."
-      offlineTrivyArgs="--offline"
+      offlineTrivyArgs="--skip-db-update --skip-java-db-update --offline-scan --skip-check-update"
     fi
     
     command="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock $ignoreMountArgs $localCacheMountArgs ${{ parameters.dockerExtraArguments }} aquasec/trivy:latest $ignoreFileTrivyArgs $localCacheTrivyArgs $offlineTrivyArgs --exit-code 1 --format table --scanners vuln,misconfig,secret ${{ parameters.trivyExtraArguments }}"
