@@ -16,6 +16,10 @@ stages:
 - stage: deployTrivyVulnerabilityDb
   displayName: 'Deploy latest Trivy vulnerability database'
   variables:
+  - name: azureSubscription
+    value: $(azureSubscription)
+  - name: trivyVulnerabilityDbStorage
+    value: $(trivyVulnerabilityDbStorage)
   - name: trivyVulnerabilityDbContainer
     value: 'trivy-vulnerability-db-cache'
   - name: trivyVulnerabilityDbZipName
