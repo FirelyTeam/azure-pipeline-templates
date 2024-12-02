@@ -67,11 +67,11 @@ steps:
           --account-name ${{ parameters.trivyCacheStorageAccount }} \
           --container-name ${{ parameters.trivyCacheContainerName }} \
           --name ${{ parameters.trivyCacheBlobName }} \
-          --file ${{ parameters.destinationPath }}/${{ parameters.trivyCacheBlobName }} \
+          --file $(Agent.TempDirectory)/${{ parameters.trivyCacheBlobName }} \
           --auth-mode login
 
         echo "Unzipping blob..."
-        unzip -o ${{ parameters.destinationPath }}/${{ parameters.trivyCacheBlobName }} -d ${{ parameters.localTrivyDbPath }}
+        unzip -o $(Agent.TempDirectory)/${{ parameters.trivyCacheBlobName }} -d ${{ parameters.localTrivyDbPath }}
         echo "Blob retrieved and unzipped successfully."
 
 
