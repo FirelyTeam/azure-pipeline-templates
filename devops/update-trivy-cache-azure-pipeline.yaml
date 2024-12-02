@@ -13,7 +13,7 @@ trigger: none
 pr: none
 
 stages:
-- stage: deployTrivyVulnerabilityDb
+- stage: deployTrivyCache
   displayName: 'Deploy latest Trivy vulnerability database'
   variables:
   - name: azureSubscription
@@ -68,18 +68,18 @@ stages:
         artifactName: trivy-db-zip
       displayName: 'Publish Trivy vulnerability database zip file'
 
-  - task: AzureCLI@2
-    displayName: 'Deploy Trivy cache'
-    inputs:
-      azureSubscription: ${{ variables.azureSubscription }}
-      scriptType: bash
-      scriptLocation: inlineScript
-      inlineScript: |
-        echo "Uploading $trivyDbZipPath to blob storage..."
-        az storage blob upload \
-          --account-name ${{ variables.trivyCacheStorageAccount }} \
-          --container-name ${{ variables.trivyCacheContainerName }} \
-          --name ${{ variables.trivyCacheBlobName }} \
-          --file $trivyDbZipPath \
-          --auth-mode login
-        echo "Blob deployed successfully."
+    - task: AzureCLI@2
+      displayName: 'Deploy Trivy cache'
+      inputs:
+        azureSubscription: ${{ variables.azureSubscription }}
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          echo "Uploading $trivyDbZipPath to container '${{ variables.trivyCacheContainerName }}' in blob storage account '${{ variables.trivyCacheStorageAccount }}'"
+          az storage blob upload \
+            --account-name ${{ variables.trivyCacheStorageAccount }} \
+            --container-name ${{ variables.trivyCacheContainerName }} \
+            --name ${{ variables.trivyCacheBlobName }} \
+            --file $trivyDbZipPath \
+            --auth-mode login
+          echo "Blob deployed successfully."
