@@ -66,7 +66,8 @@ stages:
           ls -al $localTrivyCachePath
           
           echo "Creating zip file '$trivyCacheZipPath' containing Trivy cache..."
-          zip -r "$trivyCacheZipPath" "$localTrivyCachePath"
+          cd $localTrivyCachePath
+          zip -r "$trivyCacheZipPath" ./*
           
           echo "Uploading $trivyCacheZipPath to container '${{ variables.trivyCacheContainer }}' in blob storage account '$(TrivyCacheStorageAccount)'"
           az storage blob upload \

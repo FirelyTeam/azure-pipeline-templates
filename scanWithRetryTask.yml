@@ -70,6 +70,8 @@ steps:
           --file $(Agent.TempDirectory)/${{ parameters.trivyCacheBlobName }} \
           --auth-mode login
 
+        echo "Create folder ${{ parameters.localTrivyCachePath }}.."
+        mkdir -p ${{ parameters.localTrivyCachePath }}
         echo "Unzipping blob..."
         unzip -o $(Agent.TempDirectory)/${{ parameters.trivyCacheBlobName }} -d ${{ parameters.localTrivyCachePath }}
         echo "Blob retrieved and unzipped successfully."
