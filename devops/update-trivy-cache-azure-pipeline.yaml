@@ -1,0 +1,86 @@
+# File: devops/azure_pipelines_store_trivy_db.yaml
+# This pipeline downloads the latest Trivy vulnerability database and stores it in an Azure Blob Storage container.
+
+schedules:
+- cron: '0 2 * * 1-5'
+  displayName: 'Daily at 4:00 AM (Mon-Fri)'
+  branches:
+    include: 
+    - master
+  always: true
+
+trigger: none
+pr: none
+
+stages:
+- stage: deployTrivyVulnerabilityDb
+  displayName: 'Deploy latest Trivy vulnerability database'
+  variables:
+  - name: trivyVulnerabilityDbContainer
+    value: 'trivy-vulnerability-db-cache'
+  - name: trivyVulnerabilityDbZipName
+    value: 'trivy-db.zip'
+  - name: localTrivyDbPath
+    value: $(Agent.TempDirectory)/trivy-db
+  - name: trivyDbZipPath
+    value: $(Agent.TempDirectory)/trivy-db.zip
+  - name: localEmptyDir
+    value: $(Agent.TempDirectory)/empty
+
+  jobs:
+  - job: retrieveTrivyVulnerabilityDb
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - checkout: none
+    - powershell: |
+        $localTrivyDbPath = "${{ variables.localTrivyDbPath }}"
+        $localEmptyDir = "${{ variables.localEmptyDir }}"
+        Write-Host "Creating empty directory '$localEmptyDir' to run trivy on"
+        New-Item -ItemType Directory -Force -Path $localEmptyDir
+        
+        Write-Host "Creating local directory '$localTrivyDbPath' to store Trivy vulnerability DB"
+        New-Item -ItemType Directory -Force -Path $localTrivyDbPath
+
+    - template: ../scanWithRetryTask.yml
+      parameters:
+        dockerExtraArguments: "-v ${{ variables.localEmptyDir }}:/src -v ${{ variables.localTrivyDbPath }}:/mnt/trivy/cache"
+        trivyExtraArguments: "filesystem /src --cache-dir /mnt/trivy/cache"
+        trivyIgnoreFile: ""
+        displayName: Scan empty
+
+    - powershell: |
+        $trivyDbZipPath = "${{ variables.trivyDbZipPath }}"
+        $localTrivyDbPath = "${{ variables.localTrivyDbPath }}"
+        Write-Host "Listing files in '$localTrivyDbPath'"
+        Get-ChildItem -Path $localTrivyDbPath
+        Write-Host "Creating zip file '$trivyDbZipPath' containing Trivy vulnerability DB"
+        Compress-Archive -Path $localTrivyDbPath\* -DestinationPath $trivyDbZipPath
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: ${{ variables.trivyDbZipPath }}
+        artifactName: trivy-db-zip
+      displayName: 'Publish Trivy vulnerability database zip file'
+
+
+  - job: deployTrivyVulnerabilityDb
+    dependsOn: retrieveTrivyVulnerabilityDb
+    pool:
+      vmImage: 'windows-latest' # Use a Windows agent to run the AzureFileCopy task
+    steps:  
+    - checkout: none
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        artifactName: trivy-db-zip
+        targetPath: $(Agent.TempDirectory)
+      displayName: 'Download Trivy vulnerability database zip file'
+
+    - task: AzureFileCopy@6
+      inputs:
+        SourcePath: ${{ variables.trivyDbZipPath }}
+        azureSubscription: ${{ variables.azureSubscription }}
+        Destination: 'AzureBlob'
+        storage: ${{ variables.trivyVulnerabilityDbStorage }}
+        ContainerName: ${{ variables.trivyVulnerabilityDbContainer }}
+        BlobPrefix: ${{ variables.trivyVulnerabilityDbZipName }}
+      displayName: 'Upload Trivy vulnerability database to Azure Blob Storage'
