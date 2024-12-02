@@ -10,6 +10,26 @@ parameters:
   type: 'string'
   default: ''
   displayName: 'The path to the trivy ignore file'
+- name : trivyCacheAzureSubscription
+  type: string
+  default: ''
+  displayName: 'Subscription used to retrieve Trivy cache. If left empty, no cache will be used.'
+- name : trivyCacheStorageAccountName
+  type: string
+  default: ''
+  displayName: 'Storage account name where the Trivy cache is stored'
+- name : trivyCacheContainerName
+  type: string
+  default: ''
+  displayName: 'Container name where the Trivy cache is stored'
+- name : trivyCacheBlobName
+  type: string
+  default: 'trivy-db.zip'
+  displayName: 'Name of the Zip file containing the Trivy vulnerability DB cache'
+- name: localTrivyDbPath
+  type: string
+  default: $(Agent.TempDirectory)/trivy-db
+  displayName: 'Folder path containing the Trivy vulnerability DB cache'
 
 steps:
   - checkout: self
@@ -19,3 +39,8 @@ steps:
       trivyExtraArguments: "filesystem /src"
       trivyIgnoreFile: ${{ parameters.trivyIgnoreFile }}
       displayName: Scan compiled code with Trivy
+      trivyCacheAzureSubscription: ${{ parameters.trivyCacheAzureSubscription }}
+      trivyCacheStorageAccountName: ${{ parameters.trivyCacheStorageAccountName }}
+      trivyCacheContainerName: ${{ parameters.trivyCacheContainerName }}
+      trivyCacheBlobName: ${{ parameters.trivyCacheBlobName }}
+      localTrivyDbPath: ${{ parameters.localTrivyDbPath }}
