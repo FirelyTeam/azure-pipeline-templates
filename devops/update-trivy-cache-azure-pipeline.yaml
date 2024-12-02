@@ -17,16 +17,16 @@ stages:
 - stage: deployTrivyCache
   displayName: 'Deploy latest Trivy vulnerability database'
   variables:
-  - name: trivyVulnerabilityDbContainer
-    value: 'trivy-vulnerability-db-cache'
+  - name: trivyCacheContainer
+    value: 'trivy-cache'
   - name: trivyVulnerabilityDbZipName
-    value: 'trivy-db.zip'
+    value: 'trivy-cache.zip'
   - name : trivyCacheBlobName
-    value: 'trivy-db.zip'
+    value: 'trivy-cache.zip'
   - name: localTrivyCachePath
     value: $(Agent.TempDirectory)/trivy-db
   - name: trivyCacheZipPath
-    value: $(Agent.TempDirectory)/trivy-db.zip
+    value: $(Agent.TempDirectory)/trivy-cache.zip
   - name: localEmptyDir
     value: $(Agent.TempDirectory)/empty
 
@@ -68,11 +68,15 @@ stages:
           echo "Creating zip file '$trivyCacheZipPath' containing Trivy cache..."
           zip -r "$trivyCacheZipPath" "$localTrivyCachePath"
           
-          Write-Host "Uploading $trivyCacheZipPath to container '${{ variables.trivyCacheContainerName }}' in blob storage account '${{ variables.trivyCacheStorageAccount }}'"
+          Write-Host "Uploading $trivyCacheZipPath to container '${{ variables.trivyCacheContainer }}' in blob storage account '$(TrivyCacheStorageAccount)'"
           az storage blob upload \
             --account-name $(TrivyCacheStorageAccount) \
-            --container-name ${{ variables.trivyCacheContainerName }} \
+            --container-name ${{ variables.trivyCacheContainer }} \
             --name ${{ variables.trivyCacheBlobName }} \
             --file $trivyCacheZipPath \
             --auth-mode login
+          if [ $? -ne 0 ]; then
+            echo "Failed to upload Trivy cache."
+            exit 1
+          fi
           echo "Blob deployed successfully."

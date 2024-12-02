@@ -9,11 +9,11 @@ parameters:
   displayName: 'Storage account name where the Trivy cache is stored'
 - name : trivyCacheContainerName
   type: string
-  default: 'trivy-vulnerability-db-cache'
+  default: 'trivy-cache'
   displayName: 'Container name where the Trivy cache is stored'
 - name : trivyCacheBlobName
   type: string
-  default: 'trivy-db.zip'
+  default: 'trivy-cache.zip'
   displayName: 'Name of the Zip file containing the Trivy vulnerability DB cache'
 - name: localTrivyCachePath
   type: string
