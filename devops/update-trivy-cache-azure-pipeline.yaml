@@ -60,16 +60,16 @@ stages:
       displayName: 'Deploy Trivy cache'
       inputs:
         azureSubscription: ${{ variables.azureSubscription }}
-        scriptType: powershell
+        scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
-          $trivyCacheZipPath = "${{ variables.trivyCacheZipPath }}"
-          $localTrivyCachePath = "${{ variables.localTrivyCachePath }}"
-          Write-Host "Listing files in '$localTrivyCachePath'"
-          Get-ChildItem -Path $localTrivyCachePath
+          trivyCacheZipPath="${{ variables.trivyCacheZipPath }}"
+          localTrivyCachePath="${{ variables.localTrivyCachePath }}"
+          echo "Listing files in '$localTrivyCachePath'"
+          ls -al $localTrivyCachePath
           
-          Write-Host "Creating zip file '$trivyCacheZipPath' containing Trivy cache..."
-          Compress-Archive -Path $localTrivyCachePath\* -DestinationPath $trivyCacheZipPath
+          echo "Creating zip file '$trivyCacheZipPath' containing Trivy cache..."
+          zip -r "$trivyCacheZipPath" "$localTrivyCachePath"
           
           Write-Host "Uploading $trivyCacheZipPath to container '${{ variables.trivyCacheContainerName }}' in blob storage account '${{ variables.trivyCacheStorageAccount }}'"
           az storage blob upload \
