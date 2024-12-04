@@ -10,6 +10,13 @@ parameters:
   type: 'string'
   default: ''
   displayName: 'The path to the trivy ignore file'
+- name : trivyCacheAzureSubscription
+  type: string
+  default: ''
+  displayName: 'Subscription used to retrieve Trivy cache. If left empty, no cache will be used.'
+- name : trivyCacheStorageAccount
+  type: string
+  default: ''
 
 steps:
   - checkout: self
@@ -19,3 +26,6 @@ steps:
       trivyExtraArguments: "filesystem /src"
       trivyIgnoreFile: ${{ parameters.trivyIgnoreFile }}
       displayName: Scan compiled code with Trivy
+      trivyCacheAzureSubscription: ${{ parameters.trivyCacheAzureSubscription }}
+      trivyCacheStorageAccount: ${{ parameters.trivyCacheStorageAccount }}
+      localTrivyCachePath: $(Agent.TempDirectory)/trivy-cache

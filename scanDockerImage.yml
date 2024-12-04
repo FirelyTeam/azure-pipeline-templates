@@ -19,7 +19,14 @@ parameters:
   type: 'string'
   default: ''
   displayName: 'The version of the Docker repository'
-
+- name : trivyCacheAzureSubscription
+  type: string
+  default: ''
+  displayName: 'Subscription used to retrieve Trivy cache. If left empty, no cache will be used.'
+- name : trivyCacheStorageAccount
+  type: string
+  default: ''
+  displayName: 'Storage account name where the Trivy cache is stored'
 
 jobs:
 - job: scanDockerImage
@@ -44,6 +51,9 @@ jobs:
       trivyExtraArguments: "image ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}"
       trivyIgnoreFile: ${{ parameters.trivyIgnoreFile }}
       displayName: Scan image with Trivy
+      trivyCacheAzureSubscription: ${{ parameters.trivyCacheAzureSubscription }}
+      trivyCacheStorageAccount: ${{ parameters.trivyCacheStorageAccount }}
+      localTrivyCachePath: $(Agent.TempDirectory)/trivy-cache
 
 #  The Trivy task does not work yet.
 #    - task: trivy@1

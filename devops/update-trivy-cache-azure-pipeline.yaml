@@ -1,0 +1,84 @@
+# File: devops/update-trivy-cache-azure-pipeline.yaml
+# This pipeline downloads the latest Trivy vulnerability database and stores it in an Azure Blob Storage container.
+# Need to set the variables $(AzureSubscription) and $(TrivyCacheStorageAccount) in the pipeline on dev.azure.com
+
+schedules:
+- cron: '0 2 * * 1-5'
+  displayName: 'Daily at 4:00 AM (Mon-Fri)'
+  branches:
+    include: 
+    - master
+  always: true
+
+trigger: none
+pr: none
+
+stages:
+- stage: deployTrivyCache
+  displayName: 'Deploy latest Trivy vulnerability database'
+  variables:
+  - name: trivyCacheContainer
+    value: 'trivy-cache'
+  - name: trivyVulnerabilityDbZipName
+    value: 'trivy-cache.zip'
+  - name : trivyCacheBlobName
+    value: 'trivy-cache.zip'
+  - name: localTrivyCachePath
+    value: $(Agent.TempDirectory)/trivy-cache
+  - name: trivyCacheZipPath
+    value: $(Agent.TempDirectory)/trivy-cache.zip
+  - name: localEmptyDir
+    value: $(Agent.TempDirectory)/empty
+
+  jobs:
+  - job: retrieveAndDeployTrivyCache
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - checkout: self
+    - powershell: |
+        $localTrivyCachePath = "${{ variables.localTrivyCachePath }}"
+        $localEmptyDir = "${{ variables.localEmptyDir }}"
+        Write-Host "Creating empty directory '$localEmptyDir' to run trivy on"
+        New-Item -ItemType Directory -Force -Path $localEmptyDir
+        
+        Write-Host "Creating local directory '$localTrivyCachePath' to store Trivy vulnerability DB"
+        New-Item -ItemType Directory -Force -Path $localTrivyCachePath
+      displayName: 'Prepare directories'
+
+    - template: ../scanWithRetryTask.yml
+      parameters:
+        dockerExtraArguments: "-v ${{ variables.localEmptyDir }}:/src -v ${{ variables.localTrivyCachePath }}:/mnt/trivy/cache"
+        trivyExtraArguments: "filesystem /src --cache-dir /mnt/trivy/cache"
+        trivyIgnoreFile: ""
+        displayName: Scan empty
+    
+    - task: AzureCLI@2
+      displayName: 'Deploy Trivy cache'
+      inputs:
+        azureSubscription: $(AzureSubscription)
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          trivyCacheZipPath="${{ variables.trivyCacheZipPath }}"
+          localTrivyCachePath="${{ variables.localTrivyCachePath }}"
+          echo "Listing files in '$localTrivyCachePath'"
+          ls -al $localTrivyCachePath
+          
+          echo "Creating zip file '$trivyCacheZipPath' containing Trivy cache..."
+          cd $localTrivyCachePath
+          zip -r "$trivyCacheZipPath" ./*
+          
+          echo "Uploading $trivyCacheZipPath to container '${{ variables.trivyCacheContainer }}' in blob storage account '$(TrivyCacheStorageAccount)'"
+          az storage blob upload \
+            --account-name $(TrivyCacheStorageAccount) \
+            --container-name ${{ variables.trivyCacheContainer }} \
+            --name ${{ variables.trivyCacheBlobName }} \
+            --file $trivyCacheZipPath \
+            --overwrite \
+            --auth-mode login
+          if [ $? -ne 0 ]; then
+            echo "Failed to upload Trivy cache."
+            exit 1
+          fi
+          echo "Blob deployed successfully."

@@ -1,4 +1,24 @@
 parameters:
+- name : trivyCacheAzureSubscription
+  type: string
+  default: ''
+  displayName: 'Subscription used to retrieve Trivy cache. If left empty, no cache will be used.'
+- name : trivyCacheStorageAccount
+  type: string
+  default: ''
+  displayName: 'Storage account name where the Trivy cache is stored'
+- name : trivyCacheContainerName
+  type: string
+  default: 'trivy-cache'
+  displayName: 'Container name where the Trivy cache is stored'
+- name : trivyCacheBlobName
+  type: string
+  default: 'trivy-cache.zip'
+  displayName: 'Name of the Zip file containing the Trivy cache'
+- name: localTrivyCachePath
+  type: string
+  default: $(Agent.TempDirectory)/trivy-cache
+  displayName: 'Folder path containing the Trivy cache'
 - name : dockerExtraArguments
   type: string
   default: ''
@@ -17,19 +37,76 @@ parameters:
   displayName: 'The display name of the task'
 
 steps:
+- ${{ if ne(parameters.trivyCacheAzureSubscription, '') }}:
+  - task: AzureCLI@2
+    displayName: 'Retrieve Trivy cache'
+    inputs:
+      azureSubscription: ${{ parameters.trivyCacheAzureSubscription }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        echo "Checking provided parameters..."
+        if [ -z "${{ parameters.trivyCacheStorageAccount }}" ]; then
+          echo "Trivy cache storage account name is not provided."
+          exit 1
+        fi
+        if [ -z "${{ parameters.trivyCacheContainerName }}" ]; then
+          echo "Trivy cache container name is not provided."
+          exit 1
+        fi
+        if [ -z "${{ parameters.trivyCacheBlobName }}" ]; then
+          echo "Trivy cache blob name is not provided."
+          exit 1
+        fi
+        if [ -z "${{ parameters.localTrivyCachePath }}" ]; then
+          echo "Local Trivy DB path is not provided."
+          exit 1
+        fi
+        echo "Retrieving blob storage..."
+        az storage blob download \
+          --account-name ${{ parameters.trivyCacheStorageAccount }} \
+          --container-name ${{ parameters.trivyCacheContainerName }} \
+          --name ${{ parameters.trivyCacheBlobName }} \
+          --file $(Agent.TempDirectory)/${{ parameters.trivyCacheBlobName }} \
+          --auth-mode login
+
+        echo "Create folder ${{ parameters.localTrivyCachePath }}.."
+        mkdir -p ${{ parameters.localTrivyCachePath }}
+        echo "Unzipping blob..."
+        unzip -o $(Agent.TempDirectory)/${{ parameters.trivyCacheBlobName }} -d ${{ parameters.localTrivyCachePath }}
+        echo "Blob retrieved and unzipped successfully."
+
+
 - script: |
     retries=10
     count=0
+    if [ -z "${{ parameters.localTrivyCachePath }}" ]; then
+          echo "Local Trivy DB path is not provided."
+          exit 1
+        fi
     if [ -n "${{ parameters.trivyIgnoreFile }}" ]; then
-      mountArgs="-v ${{ parameters.trivyIgnoreFile }}:/tmp/trivyignore"
-      ignoreFileArgs="--ignorefile /tmp/trivyignore"
+      ignoreMountArgs="-v ${{ parameters.trivyIgnoreFile }}:/tmp/trivyignore"
+      ignoreFileTrivyArgs="--ignorefile /tmp/trivyignore"
       echo "Using ignore file at ${{ parameters.trivyIgnoreFile }}"
     else 
-      mountArgs=""
-      ignoreFileArgs=""
+      ignoreMountArgs=""
+      ignoreFileTrivyArgs=""
       echo "No ignore file specified."
     fi
-    command="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock $mountArgs ${{ parameters.dockerExtraArguments }} aquasec/trivy:latest $ignoreFileArgs --exit-code 1 --format table --scanners vuln,misconfig,secret ${{ parameters.trivyExtraArguments }}"
+    echo "Using local cache at ${{ parameters.localTrivyCachePath }}: "
+    ls -al ${{ parameters.localTrivyCachePath }}
+    localCacheMountArgs="-v ${{ parameters.localTrivyCachePath }}:/mnt/trivy/cache"
+    localCacheTrivyArgs="--cache-dir /mnt/trivy/cache"
+    # If the cache folder is not empty, use the offline mode
+    if [ -z "$( ls -A '${{ parameters.localTrivyCachePath }}' )" ]; then
+      echo "Local cache is empty."
+      offlineTrivyArgs=""
+    else
+      echo "Local cache is not empty, running in offline mode."
+      offlineTrivyArgs="--skip-db-update --skip-java-db-update --offline-scan --skip-check-update"
+    fi
+    
+    command="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock $ignoreMountArgs $localCacheMountArgs ${{ parameters.dockerExtraArguments }} aquasec/trivy:latest $ignoreFileTrivyArgs $localCacheTrivyArgs $offlineTrivyArgs --exit-code 1 --format table --scanners vuln,misconfig,secret ${{ parameters.trivyExtraArguments }}"
     
     echo "Executing '$command' with retries..."
     while [ $count -lt $retries ]; do
