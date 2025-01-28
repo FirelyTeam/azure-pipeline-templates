@@ -26,7 +26,7 @@ jobs:
 
 
           - task: NuGetCommand@2
-            displayName: 'MyGet push'
+            displayName: 'Nuget push'
             inputs:
                 command: push
                 packagesToPush: '$(System.ArtifactsDirectory)/NuGetArtifacts/${{ parameters.packageArtifactName }}/*.nupkg'
