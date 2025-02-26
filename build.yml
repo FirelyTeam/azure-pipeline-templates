@@ -15,7 +15,7 @@ parameters:
   default: '' # used for versionSuffix, if not empty, the versionSuffix will be read from the props file
 - name: restoreDependencies
   type: boolean
-  default: false
+  default: false # if true, dependencies will be restored before building
 - name: nuGetServiceConnections
   type: string
   default: '' # Service connection credentials for feeds outside this organization. 
@@ -24,25 +24,25 @@ parameters:
   default: --source https://nuget.pkg.github.com/FirelyTeam/index.json # sources to check for dependencies, other than the normal nuget.org feed
 - name: packageArtifacts
   type: boolean
-  default: false
+  default: false # if true, the artifacts will be packaged
 - name: publishArtifacts
   type: boolean
-  default: false
+  default: false # if true, the artifacts will be published
 - name: packageArtifactName
   type: string
-  default: 'NuGetPackages'
+  default: 'NuGetPackages' # name of the artifact to package
 - name: publishWebProjects
   type: boolean
-  default: false
+  default: false # if true, the web projects will be published
 - name: zipAfterPublish
   type: boolean
-  default: false
+  default: false # if true, the published artifacts will be zipped
 - name: checkoutSubmodules
   type: boolean
-  default: false
+  default: false # if true, submodules will be checked out
 - name: pool
   type: object
-  default: {}
+  default: {} # pool to use for the build
 - name: testFilter
   type: string
   default: '' # filter for unit tests; all tests by default
@@ -176,7 +176,7 @@ jobs:
         Write-Host "##vso[task.setvariable variable=Version;isOutput=true]$version" 
 
   - task: DotNetCoreCLI@2
-    displayName: 'dotnet test UnitTests'
+    displayName: 'dotnet test UnitTests with filter'
     condition: and(succeeded(), ne('${{ parameters.testFilter }}', ''))
     inputs:
       command: test
@@ -190,6 +190,8 @@ jobs:
       command: test
       projects: '**/*Tests/*Tests.csproj'
       arguments: '--configuration $(buildConfiguration) --no-restore'
+
+  
 
   - ${{ if eq(parameters.packageArtifacts, 'true') }}:
     - template: package.yml
