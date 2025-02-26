@@ -191,7 +191,10 @@ jobs:
       projects: '**/*Tests/*Tests.csproj'
       arguments: '--configuration $(buildConfiguration) --no-restore'
 
-  
+  - template: strongNameSigning.yml
+    parameters:
+      signingKeyFileName: 'FhirMetrics.snk'
+      filesForSigning: '$(Build.SourcesDirectory)\src\Fhir.Metrics\bin\Release\*\Fhir.Metrics.dll'
 
   - ${{ if eq(parameters.packageArtifacts, 'true') }}:
     - template: package.yml
