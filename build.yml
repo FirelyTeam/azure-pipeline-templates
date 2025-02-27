@@ -22,7 +22,7 @@ parameters:
   default: '' # Service connection credentials for feeds outside this organization. 
 - name: nuGetSources
   type: string
-  default: --source https://nuget.pkg.github.com/FirelyTeam/index.json # sources to check for dependencies, other than the normal nuget.org feed
+  default: ''  # sources to check for dependencies, other than the normal nuget.org feed
 - name: packageArtifacts
   type: boolean
   default: false # if true, the artifacts will be packaged
