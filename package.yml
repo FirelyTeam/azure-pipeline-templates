@@ -1,8 +1,22 @@
 parameters:
   # Default values
-  useVersionSuffix: true
-  versionSuffix: ''
-  artifactName: 'NuGetPackages'
+- name: useVersionSuffix
+  type: boolean
+  default: true  # if true, the build number will be added as or to the existing version suffix
+- name: versionSuffix
+  type: string
+  default: '' # if not empty, the version suffix will be used for packaging
+- name: artifactName
+  type: string 
+  default: 'NuGetPackages' # name of the artifact to package
+- name: codeSignerCertificate
+  type: string
+  default: ''
+  displayName: 'The code signing certificate to use for signing the nuget packages'
+- name: codeSigningPassword
+  type: string
+  default: ''
+  displayName: 'Password for the code signing certificate'
 
 steps:
   - powershell: |
@@ -45,6 +59,12 @@ steps:
   - script: dotnet pack --no-build --configuration $(buildConfiguration) --output $(Build.artifactStagingDirectory)/packages
     displayName: 'dotnet pack $(buildConfiguration)'
     condition: and(succeeded(), eq(variables.UseVersionSuffix, 'false'))
+
+  - template: codesign-nuget-packages.yml
+    parameters:
+      certificateValue: ${{ parameters.codeSignerCertificate }}
+      certificatePasswordValue: ${{ parameters.codeSigningPassword }}
+      packagePaths: $(Build.ArtifactStagingDirectory)\packages\*.nupkg
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish Artifact'

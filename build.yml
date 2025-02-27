@@ -69,6 +69,14 @@ parameters:
   type: string
   default: '_no_exclude_'
   displayName: 'Expression for files to exclude for signing'
+- name: codeSignerCertificate
+  type: string
+  default: ''
+  displayName: 'The code signing certificate to use for signing the nuget packages'
+- name: codeSigningPassword
+  type: string
+  default: ''
+  displayName: 'Password for the code signing certificate'
 
 jobs:
 - job: Build
@@ -211,6 +219,8 @@ jobs:
         artifactName: ${{parameters.packageArtifactName}}
         useVersionSuffix: ${{ parameters.useVersionSuffix }}
         versionSuffix: $(VersionSuffix)
+        codeSignerCertificate: ${{ parameters.codeSignerCertificate }}
+        codeSigningPassword: ${{ parameters.codeSigningPassword }}
   
   - ${{ if parameters.publishArtifacts }}:
     - template: publish.yml
