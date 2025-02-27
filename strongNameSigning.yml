@@ -19,7 +19,7 @@ parameters:
     displayName: 'Strong name key file'
 
 steps:
-  - checkout: {{ parameters.templateAlias }}
+  - checkout: '{{ parameters.templateAlias }}'
     path: $(Pipeline.Workspace)/templates
   - task: DownloadSecureFile@1
     displayName: Download Signing key file
