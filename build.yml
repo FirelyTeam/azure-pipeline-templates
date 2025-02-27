@@ -67,7 +67,6 @@ jobs:
 
   - checkout: self
     submodules: '{{ parameters.checkoutSubmodules }}'
-    path: $(Pipeline.Workspace)
 
   - powershell: |
       Write-Host "Build.SourceDirectory: $(Build.SourceDirectory)"
