@@ -200,10 +200,10 @@ jobs:
 
   - template: strongNameSigning.yml
     parameters:
-      signingKeyFileName: {{ parameters.signingKeyFileName }}
-      signingToolName: {{ parameters.signingToolName }}
-      filesToExcludeForSigning: {{ parameters.filesToExcludeForSigning }}
-      filesForSigning: {{ parameters.filesForSigning }}
+      signingKeyFileName: ${{ parameters.signingKeyFileName }}
+      signingToolName: ${{ parameters.signingToolName }}
+      filesToExcludeForSigning: ${{ parameters.filesToExcludeForSigning }}
+      filesForSigning: ${{ parameters.filesForSigning }}
 
   - ${{ if eq(parameters.packageArtifacts, 'true') }}:
     - template: package.yml
