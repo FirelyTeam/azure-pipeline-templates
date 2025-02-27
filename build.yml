@@ -205,14 +205,14 @@ jobs:
       filesToExcludeForSigning: ${{ parameters.filesToExcludeForSigning }}
       filesForSigning: ${{ parameters.filesForSigning }}
 
-  - ${{ if eq(parameters.packageArtifacts, 'true') }}:
+  - ${{ if parameters.packageArtifacts) }}:
     - template: package.yml
       parameters:
         artifactName: ${{parameters.packageArtifactName}}
         useVersionSuffix: ${{ parameters.useVersionSuffix }}
         versionSuffix: $(VersionSuffix)
   
-  - ${{ if eq(parameters.publishArtifacts, 'true') }}:
+  - ${{ if parameters.publishArtifacts }}:
     - template: publish.yml
       parameters:
         useVersionSuffix: ${{ parameters.useVersionSuffix }}
