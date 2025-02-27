@@ -37,7 +37,7 @@ steps:
         {
           Write-Verbose "Signing file: $file"
 
-          & '$(Agent.TempDirectory)/${{ parameters.signingToolName }}' -R $file $(Agent.TempDirectory)/${{ parameters.signingKeyFileName }}
+          & '$(Agent.TempDirectory)\${{ parameters.signingToolName }}' -R $file $(Agent.TempDirectory)/${{ parameters.signingKeyFileName }}
           Write-Verbose "Last exitcode after signing file: $lastexitcode"
         }
         Write-Verbose "Last exitcode after signing all files: $lastexitcode"
