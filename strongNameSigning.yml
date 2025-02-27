@@ -2,13 +2,14 @@
 # File: strongNameSigning.yml
 
 parameters:
-  - name: checkoutSteps 
-    type: stepList 
-    default: [] 
   - name: signingKeyFileName
     type: string
     default: 'FhirNetApi.snk'
     displayName: 'Name of the signing key file'
+  - name: signingToolName
+    type: string
+    default: 'sn.exe'
+    displayName: 'Name of the signing tool'
   - name: filesForSigning
     type: string
     default: '$(Build.SourcesDirectory)\src\Hl7.Fhir*\bin\Release\*\Hl7.Fhir*.dll'
@@ -19,9 +20,10 @@ parameters:
     displayName: 'Strong name key file'
 
 steps:
-  - ${{ each step in parameters.checkoutSteps }}:
-      - ${{ each pair in step }}:
-          ${{ pair.key }}: ${{ pair.value }} 
+  - task: DownloadSecureFile@1
+    displayName: Download Signing key file
+    inputs:
+      secureFile:  '${{ parameters.signingKeyFileName }}'
   - task: DownloadSecureFile@1
     displayName: Download Signing key file
     inputs:
@@ -35,7 +37,7 @@ steps:
         {
           Write-Verbose "Signing file: $file"
 
-          & '$(Pipeline.Workspace)/templates/tools/sn.exe' -R $file $(Agent.TempDirectory)/${{ parameters.signingKeyFileName }}
+          & '$(Agent.TempDirectory)/${{ parameters.signingToolName }}' -R $file $(Agent.TempDirectory)/${{ parameters.signingKeyFileName }}
           Write-Verbose "Last exitcode after signing file: $lastexitcode"
         }
         Write-Verbose "Last exitcode after signing all files: $lastexitcode"

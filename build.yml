@@ -53,9 +53,6 @@ parameters:
 - name: isReleaseBuildExpression
   type: string
   default: startswith(variables['Build.SourceBranch'], 'refs/tags/v') # if evaluated to true, the build will be retained for the provided duration
-- name: checkoutSteps 
-  type: stepList 
-  default: [] 
 
 jobs:
 - job: Build
@@ -199,7 +196,6 @@ jobs:
 
   - template: strongNameSigning.yml
     parameters:
-      checkoutSteps: ${{ parameters.checkoutSteps }}
       signingKeyFileName: 'FhirMetrics.snk'
       filesForSigning: '$(Build.SourcesDirectory)\src\Fhir.Metrics\bin\Release\*\Fhir.Metrics.dll'
 
