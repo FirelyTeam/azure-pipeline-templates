@@ -65,8 +65,7 @@ jobs:
       version: ${{ parameters.dotNetCoreVersion }}
 
   - checkout: self
-    ${{ if eq(parameters.checkoutSubmodules, 'true') }}:
-      submodules: true
+    submodules: '{{ parameters.checkoutSubmodules }}'
 
   ## retrieve the version suffix from the props file and set it as a variable
   - powershell: |
