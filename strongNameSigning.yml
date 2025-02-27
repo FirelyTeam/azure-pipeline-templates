@@ -5,27 +5,29 @@ parameters:
   - name: signingKeyFileName
     type: string
     default: 'FhirNetApi.snk'
-    displayName: 'Name of the signing key file'
+    displayName: 'Name of the signing key file, stored at Azure DevOps as Secret File'
   - name: signingToolName
     type: string
     default: 'sn.exe'
-    displayName: 'Name of the signing tool'
+    displayName: 'Name of the signing tool, stored at Azure DevOps as Secret File'
   - name: filesForSigning
     type: string
     default: '$(Build.SourcesDirectory)\src\Hl7.Fhir*\bin\Release\*\Hl7.Fhir*.dll'
-    displayName: 'Files to sign'
+    displayName: 'Expression for files to sign'
   - name: filesToExcludeForSigning
     type: string
     default: '_no_exclude_'
-    displayName: 'Strong name key file'
+    displayName: 'Expression for files to exclude for signing'
 
 steps:
   - task: DownloadSecureFile@1
     displayName: Download Signing key file
+    name: signingKey
     inputs:
       secureFile:  '${{ parameters.signingKeyFileName }}'
   - task: DownloadSecureFile@1
-    displayName: Download Signing key file
+    name: signingTool
+    displayName: 'Download Signing key file'
     inputs:
       secureFile:  '${{ parameters.signingKeyFileName }}'
     condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest')) # not a PR
@@ -37,7 +39,7 @@ steps:
         {
           Write-Verbose "Signing file: $file"
 
-          & '$(Agent.TempDirectory)\${{ parameters.signingToolName }}' -R $file $(Agent.TempDirectory)/${{ parameters.signingKeyFileName }}
+          & '$(signingTool.secureFilePath)' -R $file $(signingKey.secureFilePath)
           Write-Verbose "Last exitcode after signing file: $lastexitcode"
         }
         Write-Verbose "Last exitcode after signing all files: $lastexitcode"
