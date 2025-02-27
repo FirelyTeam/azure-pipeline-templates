@@ -15,7 +15,7 @@ parameters:
   default: '' # used for versionSuffix, if not empty, the versionSuffix will be read from the props file
 - name: restoreDependencies
   type: boolean
-  default: false # if true, dependencies will be restored before building
+  default: false # if true, dependencies will be restored before building. THIS PARAMETER IS DEPRECATED
   displayName: 'Restore dependencies [deprecated]'
 - name: nuGetServiceConnections
   type: string
