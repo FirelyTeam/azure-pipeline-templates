@@ -29,8 +29,7 @@ steps:
     name: signingTool
     displayName: 'Download Signing key file'
     inputs:
-      secureFile:  '${{ parameters.signingKeyFileName }}'
-    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest')) # not a PR
+      secureFile: '${{ parameters.signingToolName }}'
   - powershell: |
         $files   =  Get-ChildItem -Path ${{ parameters.filesForSigning }} -Exclude ${{ parameters.filesToExcludeForSigning }}
 

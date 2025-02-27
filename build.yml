@@ -53,6 +53,22 @@ parameters:
 - name: isReleaseBuildExpression
   type: string
   default: startswith(variables['Build.SourceBranch'], 'refs/tags/v') # if evaluated to true, the build will be retained for the provided duration
+- name: signingKeyFileName
+  type: string
+  default: 'FhirNetApi.snk'
+  displayName: 'Name of the signing key file, stored at Azure DevOps as Secret File'
+- name: signingToolName
+  type: string
+  default: 'sn.exe'
+  displayName: 'Name of the signing tool, stored at Azure DevOps as Secret File'
+- name: filesForSigning
+  type: string
+  default: '$(Build.SourcesDirectory)\src\Hl7.Fhir*\bin\Release\*\Hl7.Fhir*.dll'
+  displayName: 'Expression for files to sign'
+- name: filesToExcludeForSigning
+  type: string
+  default: '_no_exclude_'
+  displayName: 'Expression for files to exclude for signing'
 
 jobs:
 - job: Build
@@ -184,8 +200,10 @@ jobs:
 
   - template: strongNameSigning.yml
     parameters:
-      signingKeyFileName: 'FhirMetrics.snk'
-      filesForSigning: '$(Build.SourcesDirectory)\src\Fhir.Metrics\bin\Release\*\Fhir.Metrics.dll'
+      signingKeyFileName: {{ parameters.signingKeyFileName }}
+      signingToolName: {{ parameters.signingToolName }}
+      filesToExcludeForSigning: {{ parameters.filesToExcludeForSigning }}
+      filesForSigning: {{ parameters.filesForSigning }}
 
   - ${{ if eq(parameters.packageArtifacts, 'true') }}:
     - template: package.yml
