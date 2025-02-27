@@ -4,7 +4,7 @@
 parameters:
   - name: signingKeyFileName
     type: string
-    default: 'FhirNetApi.snk'
+    default: ''
     displayName: 'Name of the signing key file, stored at Azure DevOps as Secret File'
   - name: signingToolName
     type: string
@@ -12,7 +12,7 @@ parameters:
     displayName: 'Name of the signing tool, stored at Azure DevOps as Secret File'
   - name: filesForSigning
     type: string
-    default: '$(Build.SourcesDirectory)\src\Hl7.Fhir*\bin\Release\*\Hl7.Fhir*.dll'
+    default: '_none_'
     displayName: 'Expression for files to sign'
   - name: filesToExcludeForSigning
     type: string
@@ -20,30 +20,36 @@ parameters:
     displayName: 'Expression for files to exclude for signing'
 
 steps:
-  - task: DownloadSecureFile@1
-    displayName: Download Signing key file
-    name: signingKey
-    inputs:
-      secureFile:  '${{ parameters.signingKeyFileName }}'
-  - task: DownloadSecureFile@1
-    name: signingTool
-    displayName: 'Download Signing key file'
-    inputs:
-      secureFile: '${{ parameters.signingToolName }}'
-  - powershell: |
-        $files   =  Get-ChildItem -Path ${{ parameters.filesForSigning }} -Exclude ${{ parameters.filesToExcludeForSigning }}
+  - ${{ if ne(length(parameters.signingKeyFileName), 0) }}:
+    - task: DownloadSecureFile@1
+      displayName: Download Signing key file
+      name: signingKey
+      inputs:
+        secureFile:  '${{ parameters.signingKeyFileName }}'
+    - task: DownloadSecureFile@1
+      name: signingTool
+      displayName: 'Download Signing key file'
+      inputs:
+        secureFile: '${{ parameters.signingToolName }}'
+    - powershell: |
+          $files   =  Get-ChildItem -Path ${{ parameters.filesForSigning }} -Exclude ${{ parameters.filesToExcludeForSigning }}
 
-        Write-Verbose "Last exitcode before signing: $lastexitcode"
-        foreach ($file in ($files))
-        {
-          Write-Host "Signing file: $file"
+          Write-Verbose "Last exitcode before signing: $lastexitcode"
+          foreach ($file in ($files))
+          {
+            Write-Host "Signing file: $file"
 
-          & '$(signingTool.secureFilePath)' -R $file $(signingKey.secureFilePath)
-          Write-Verbose "Last exitcode after signing file: $lastexitcode"
-        }
-        Write-Verbose "Last exitcode after signing all files: $lastexitcode"
-        # suppress exitcode 
-        if ($lastexitcode -lt 2) { $global:lastexitcode = 0 }
-    displayName: Signing the dlls
-    name: signing
+            & '$(signingTool.secureFilePath)' -R $file $(signingKey.secureFilePath)
+            Write-Verbose "Last exitcode after signing file: $lastexitcode"
+          }
+          Write-Verbose "Last exitcode after signing all files: $lastexitcode"
+          # suppress exitcode 
+          if ($lastexitcode -lt 2) { $global:lastexitcode = 0 }
+      displayName: Signing the dlls
+      name: signingDlls
+  - {{ else }}:
+    - powershell: |
+        Write-Host "No signing key file provided, skipping signing"
+      displayName: 'No signing key file provided'
+      name: noSigningKeyFile
   
