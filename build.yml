@@ -69,7 +69,7 @@ jobs:
     submodules: '{{ parameters.checkoutSubmodules }}'
 
   - powershell: |
-      Write-Host "Build.SourceDirectory: $(Build.SourceDirectory)"
+      Write-Host "Build.SourceDirectory: $(Build.SourcesDirectory)"
       Write-Host "Pipeline.Workspace: $(Pipeline.Workspace)"
       # Directory listing:
       Write-Host "Directory listing:"
