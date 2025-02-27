@@ -205,7 +205,7 @@ jobs:
       filesToExcludeForSigning: ${{ parameters.filesToExcludeForSigning }}
       filesForSigning: ${{ parameters.filesForSigning }}
 
-  - ${{ if parameters.packageArtifacts) }}:
+  - ${{ if parameters.packageArtifacts }}:
     - template: package.yml
       parameters:
         artifactName: ${{parameters.packageArtifactName}}
