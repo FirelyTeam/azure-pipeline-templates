@@ -2,6 +2,9 @@
 # File: strongNameSigning.yml
 
 parameters:
+  - name: templateAlias
+    type: string
+    default: 'templates'
   - name: signingKeyFileName
     type: string
     default: 'FhirNetApi.snk'
@@ -16,6 +19,8 @@ parameters:
     displayName: 'Strong name key file'
 
 steps:
+  - checkout: {{ parameters.templateAlias }}
+    path: $(Pipeline.Workspace)/templates
   - task: DownloadSecureFile@1
     displayName: Download Signing key file
     inputs:
@@ -29,7 +34,7 @@ steps:
         {
           Write-Verbose "Signing file: $file"
 
-          & 'tools/sn.exe' -R $file $(Agent.TempDirectory)/${{ parameters.signingKeyFileName }}
+          & '$(Pipeline.Workspace)/templates/tools/sn.exe' -R $file $(Agent.TempDirectory)/${{ parameters.signingKeyFileName }}
           Write-Verbose "Last exitcode after signing file: $lastexitcode"
         }
         Write-Verbose "Last exitcode after signing all files: $lastexitcode"
