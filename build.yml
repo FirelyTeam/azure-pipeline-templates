@@ -73,7 +73,7 @@ parameters:
   type: string
   default: ''
   displayName: 'The code signing certificate to use for signing the nuget packages'
-- name: codeSigningPassword
+- name: codeSignerPassword
   type: string
   default: ''
   displayName: 'Password for the code signing certificate'
@@ -220,7 +220,7 @@ jobs:
         useVersionSuffix: ${{ parameters.useVersionSuffix }}
         versionSuffix: $(VersionSuffix)
         codeSignerCertificate: ${{ parameters.codeSignerCertificate }}
-        codeSigningPassword: ${{ parameters.codeSigningPassword }}
+        codeSignerPassword: ${{ parameters.codeSignerPassword }}
   
   - ${{ if parameters.publishArtifacts }}:
     - template: publish.yml

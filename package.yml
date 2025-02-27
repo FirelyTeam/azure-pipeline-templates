@@ -13,7 +13,7 @@ parameters:
   type: string
   default: ''
   displayName: 'The code signing certificate to use for signing the nuget packages'
-- name: codeSigningPassword
+- name: codeSignerPassword
   type: string
   default: ''
   displayName: 'Password for the code signing certificate'
@@ -63,7 +63,7 @@ steps:
   - template: codesign-nuget-packages.yml
     parameters:
       certificateValue: ${{ parameters.codeSignerCertificate }}
-      certificatePasswordValue: ${{ parameters.codeSigningPassword }}
+      certificatePasswordValue: ${{ parameters.codeSignerPassword }}
       packagePaths: $(Build.ArtifactStagingDirectory)\packages\*.nupkg
 
   - task: PublishBuildArtifacts@1
