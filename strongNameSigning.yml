@@ -2,9 +2,9 @@
 # File: strongNameSigning.yml
 
 parameters:
-  - name: templateAlias
-    type: string
-    default: 'templates'
+  - name: checkoutSteps 
+    type: stepList 
+    default: [] 
   - name: signingKeyFileName
     type: string
     default: 'FhirNetApi.snk'
@@ -19,8 +19,9 @@ parameters:
     displayName: 'Strong name key file'
 
 steps:
-  - checkout: '{{ parameters.templateAlias }}'
-    path: $(Pipeline.Workspace)/templates
+  - ${{ each step in parameters.checkoutSteps }}:
+      - ${{ each pair in step }}:
+          ${{ pair.key }}: ${{ pair.value }} 
   - task: DownloadSecureFile@1
     displayName: Download Signing key file
     inputs:
