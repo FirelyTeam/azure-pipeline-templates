@@ -55,7 +55,7 @@ parameters:
   default: startswith(variables['Build.SourceBranch'], 'refs/tags/v') # if evaluated to true, the build will be retained for the provided duration
 - name: signingKeyFileName
   type: string
-  default: 'FhirNetApi.snk'
+  default: ''
   displayName: 'Name of the signing key file, stored at Azure DevOps as Secret File'
 - name: signingToolName
   type: string
@@ -63,7 +63,7 @@ parameters:
   displayName: 'Name of the signing tool, stored at Azure DevOps as Secret File'
 - name: filesForSigning
   type: string
-  default: '$(Build.SourcesDirectory)\src\Hl7.Fhir*\bin\Release\*\Hl7.Fhir*.dll'
+  default: '_none_'
   displayName: 'Expression for files to sign'
 - name: filesToExcludeForSigning
   type: string
