@@ -27,7 +27,7 @@ parameters:
   default: ''
   
 steps:
-- ${{ if ne(length(parameters.certificateValue), 0) }}: # Only sign if a code signing certificate is provided
+- ${{ if parameters.certificateValue }}: # Only sign if a code signing certificate is provided
   - powershell: |
       #Convert the Secure password that's presented as plain text back into a secure string
       $pwd = ConvertTo-SecureString -String "${{ parameters.certificatePasswordValue }}" -Force -AsPlainText

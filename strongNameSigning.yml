@@ -20,7 +20,7 @@ parameters:
     displayName: 'Expression for files to exclude for signing'
 
 steps:
-  - ${{ if ne(length(parameters.signingKeyFileName), 0) }}:
+  - ${{ if parameters.signingKeyFileName }}:
     - task: DownloadSecureFile@1
       displayName: Download Signing key file
       name: signingKey
