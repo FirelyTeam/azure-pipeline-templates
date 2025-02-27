@@ -67,6 +67,15 @@ jobs:
 
   - checkout: self
     submodules: '{{ parameters.checkoutSubmodules }}'
+    path: $(Pipeline.Workspace)
+
+  - powershell: |
+      Write-Host "Build.SourceDirectory: $(Build.SourceDirectory)"
+      Write-Host "Pipeline.Workspace: $(Pipeline.Workspace)"
+      # Directory listing:
+      Write-Host "Directory listing:"
+      Get-ChildItem -Path $(Pipeline.Workspace) -Recurse
+    displayName: 'Debug info'
 
   ## retrieve the version suffix from the props file and set it as a variable
   - powershell: |
