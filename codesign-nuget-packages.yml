@@ -13,35 +13,49 @@
 
 
 parameters:
-  certificateValue:         # this the secret which refers to a pfx variable in the Azure Key Vault
-  certificatePasswordValue: # this the secret which refers to the password of the pfx certificate
-  packagePaths:             # the NuGet Packages to sign. Wildcards can be used, like *.nupkg
+- name: certificateValue
+  type: string
+  displayName: 'The certificate value'
+  default: ''
+- name: certificatePasswordValue
+  type: string
+  displayName: 'The certificate password value'
+  default: ''
+- name: packagePaths
+  type: string
+  displayName: 'The path to the NuGet packages to sign. Wildcards can be used, like *.nupkg'
+  default: ''
   
 steps:
-- powershell: |
-    #Convert the Secure password that's presented as plain text back into a secure string
-    $pwd = ConvertTo-SecureString -String "${{ parameters.certificatePasswordValue }}" -Force -AsPlainText
+- ${{ if parameters.certificateValue }}: # Only sign if a code signing certificate is provided
+  - powershell: |
+      #Convert the Secure password that's presented as plain text back into a secure string
+      $pwd = ConvertTo-SecureString -String "${{ parameters.certificatePasswordValue }}" -Force -AsPlainText
 
-    #Create PFX file from Certificate Variable
-    New-Item Temp-Certificate.pfx -Value ${{ parameters.certificateValue }}
+      #Create PFX file from Certificate Variable
+      New-Item Temp-Certificate.pfx -Value ${{ parameters.certificateValue }}
 
-    #Import the PFX certificate from the newly created file and password. Read the thumbprint into variable
-    $Thumbprint = (Import-PfxCertificate -CertStoreLocation Cert:\CurrentUser\My -FilePath Temp-Certificate.pfx -Password $pwd).Thumbprint
+      #Import the PFX certificate from the newly created file and password. Read the thumbprint into variable
+      $Thumbprint = (Import-PfxCertificate -CertStoreLocation Cert:\CurrentUser\My -FilePath Temp-Certificate.pfx -Password $pwd).Thumbprint
 
-    Write-Host "##vso[task.setvariable variable=Thumbprint]$Thumbprint"
+      Write-Host "##vso[task.setvariable variable=Thumbprint]$Thumbprint"
 
-    #Remove the pfx file, the certificate is now imported
-    Remove-Item Temp-Certificate.pfx
-  displayName: 'Import Code Signing certificate'
+      #Remove the pfx file, the certificate is now imported
+      Remove-Item Temp-Certificate.pfx
+    displayName: 'Import Code Signing certificate'
 
-- task: DotNetCoreCLI@2
-  displayName: 'Code signing of packages'
-  inputs:
-    command: custom
-    custom:  nuget 
-    arguments: sign ${{ parameters.packagePaths }} --certificate-fingerprint $(Thumbprint) --timestamper http://timestamp.digicert.com 
+  - task: DotNetCoreCLI@2
+    displayName: 'Code signing of packages'
+    inputs:
+      command: custom
+      custom:  nuget 
+      arguments: sign ${{ parameters.packagePaths }} --certificate-fingerprint $(Thumbprint) --timestamper http://timestamp.digicert.com 
 
-- powershell: |
-    #Delete the certificate by thumbprint, so it cannot be used elsewhere.
-    Get-ChildItem Cert:\CurrentUser\My\$(Thumbprint) | Remove-Item
-  displayName: 'Remove the certificate from cert store'
+  - powershell: |
+      #Delete the certificate by thumbprint, so it cannot be used elsewhere.
+      Get-ChildItem Cert:\CurrentUser\My\$(Thumbprint) | Remove-Item
+    displayName: 'Remove the certificate from cert store'
+- ${{ else }}:
+  - powershell: |
+      Write-Host "No code signing certificate provided, skipping signing of packages"
+    displayName: 'No code signing certificate provided'
