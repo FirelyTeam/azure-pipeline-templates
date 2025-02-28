@@ -15,7 +15,7 @@
 parameters:
 - name: certificateValue
   type: string
-  displayName: 'The certificate value from the Azure Key Vault'
+  displayName: 'The certificate value'
   default: ''
 - name: certificatePasswordValue
   type: string
