@@ -2,13 +2,16 @@ parameters:
   # Default values
 - name: useVersionSuffix
   type: boolean
-  default: true  # if true, the build number will be added as or to the existing version suffix
+  default: true
+  displayName: 'If true, the build number will be added as or to the existing version suffix'
 - name: versionSuffix
   type: string
-  default: '' # if not empty, the version suffix will be used for packaging
+  default: '' 
+  displayName: 'If not empty, the version suffix will be used for packaging'
 - name: artifactName
   type: string 
-  default: 'NuGetPackages' # name of the artifact to package
+  default: 'NuGetPackages'
+  displayName: 'Name of the artifact to package'
 - name: codeSignerCertificate
   type: string
   default: ''

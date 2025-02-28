@@ -13,11 +13,11 @@ parameters:
   - name: filesForSigning
     type: string
     default: '_none_'
-    displayName: 'Expression for files to sign'
+    displayName: 'Expression for files to sign, i.e. $(Build.SourcesDirectory)\src\Fhir.Metrics\bin\Release\*\Fhir.Metrics.dll'
   - name: filesToExcludeForSigning
     type: string
     default: '_no_exclude_'
-    displayName: 'Expression for files to exclude for signing'
+    displayName: 'Expression for files to exclude for signing, i.e. $(Build.SourcesDirectory)\src\*Fhir.Metrics.Test.dll'
 
 steps:
   - ${{ if parameters.signingKeyFileName }}:
