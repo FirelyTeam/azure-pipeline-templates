@@ -19,7 +19,7 @@ parameters:
   default: ''
 - name: certificatePasswordValue
   type: string
-  displayName: 'The certificate password value from the Azure Key Vault'
+  displayName: 'The certificate password value'
   default: ''
 - name: packagePaths
   type: string
