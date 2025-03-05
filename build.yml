@@ -213,7 +213,7 @@ jobs:
     inputs:
       command: test
       projects: ${{ parameters.testProjects }}
-      arguments: '--configuration $(buildConfiguration) --no-restore --filter ${{ parameters.testFilter }}'
+      arguments: '--configuration $(buildConfiguration) --no-restore  --no-build --filter ${{ parameters.testFilter }}'
 
   - task: DotNetCoreCLI@2
     displayName: 'dotnet test UnitTests'
@@ -221,7 +221,7 @@ jobs:
     inputs:
       command: test
       projects: ${{ parameters.testProjects }}
-      arguments: '--configuration $(buildConfiguration) --no-restore'
+      arguments: '--configuration $(buildConfiguration) --no-restore  --no-build'
 
   - template: strongNameSigning.yml
     parameters:
