@@ -20,6 +20,10 @@ parameters:
   type: string
   default: ''
   displayName: 'Password for the code signing certificate'
+- name: packageSolutionFile
+  type: string
+  default: ''
+  displayName: 'Solution file to package. If empty, the default solution file in the working directory will be used'
 
 steps:
   - powershell: |
@@ -55,11 +59,11 @@ steps:
     displayName: 'Determine version suffix use for packaging'
 
   # Package nugets
-  - script: dotnet pack --no-build --configuration $(buildConfiguration) --version-suffix $(VersionSuffixPackage) --output $(Build.artifactStagingDirectory)/packages
+  - script: dotnet pack ${{ parameters.packageSolutionFile }} --no-build --configuration $(buildConfiguration) --version-suffix $(VersionSuffixPackage) --output $(Build.artifactStagingDirectory)/packages
     displayName: 'dotnet pack $(buildConfiguration) with version suffix'
     condition: and(succeeded(), eq(variables.UseVersionSuffix, 'true'))
 
-  - script: dotnet pack --no-build --configuration $(buildConfiguration) --output $(Build.artifactStagingDirectory)/packages
+  - script: dotnet pack ${{ parameters.packageSolutionFile }} --no-build --configuration $(buildConfiguration) --output $(Build.artifactStagingDirectory)/packages
     displayName: 'dotnet pack $(buildConfiguration)'
     condition: and(succeeded(), eq(variables.UseVersionSuffix, 'false'))
 
