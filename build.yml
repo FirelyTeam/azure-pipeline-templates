@@ -104,7 +104,7 @@ jobs:
       displayName: 'Enable long paths for git'
 
   - checkout: self
-    submodules: '{{ parameters.checkoutSubmodules }}'
+    submodules: ${{ parameters.checkoutSubmodules }}
 
   ## retrieve the version suffix from the props file and set it as a variable
   - powershell: |
