@@ -39,8 +39,8 @@ parameters:
   type: boolean
   default: false # if true, the published artifacts will be zipped
 - name: checkoutSubmodules
-  type: boolean
-  default: false # if true, submodules will be checked out
+  type: string
+  default: 'false' # if 'true', submodules will be checked out, 'recursive' will also check out submodules of submodules
 - name: pool
   type: object
   default: {} # pool to use for the build
@@ -98,13 +98,13 @@ jobs:
     inputs:
       version: ${{ parameters.dotNetCoreVersion }}
 
-  - ${{ if parameters.checkoutSubmodules }}:
+  - ${{ if ne(parameters.checkoutSubmodules, 'false') }}:
     # enable long paths, especially on submodules
     - script: git config --system core.longpaths true
       displayName: 'Enable long paths for git'
 
   - checkout: self
-    submodules: '{{ parameters.checkoutSubmodules }}'
+    submodules: {{ parameters.checkoutSubmodules }}
 
   ## retrieve the version suffix from the props file and set it as a variable
   - powershell: |
