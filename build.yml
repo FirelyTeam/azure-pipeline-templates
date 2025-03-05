@@ -86,6 +86,11 @@ jobs:
     inputs:
       version: ${{ parameters.dotNetCoreVersion }}
 
+  - ${{ if parameters.checkoutSubmodules }}:
+    # enable long paths, especially on submodules
+    - script: git config --system core.longpaths true
+      displayName: 'Enable long paths for git'
+
   - checkout: self
     submodules: '{{ parameters.checkoutSubmodules }}'
 
