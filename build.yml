@@ -40,7 +40,8 @@ parameters:
   default: false # if true, the published artifacts will be zipped
 - name: checkoutSubmodules
   type: string
-  default: 'false' # if 'true', submodules will be checked out, 'recursive' will also check out submodules of submodules
+  default: 'false'
+  displayName: 'if "true", submodules will be checked out, "recursive" will also check out submodules of submodules'
 - name: pool
   type: object
   default: {} # pool to use for the build
