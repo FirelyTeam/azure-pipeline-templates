@@ -32,6 +32,7 @@ steps:
       inputs:
         secureFile: '${{ parameters.signingToolName }}'
     - powershell: |
+          Write-Host "Get-ChildItem -Path ${{ parameters.filesForSigning }} -Exclude ${{ parameters.filesToExcludeForSigning }}"
           $files   =  Get-ChildItem -Path ${{ parameters.filesForSigning }} -Exclude ${{ parameters.filesToExcludeForSigning }}
 
           Write-Verbose "Last exitcode before signing: $lastexitcode"

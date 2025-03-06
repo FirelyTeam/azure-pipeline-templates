@@ -39,11 +39,16 @@ parameters:
   type: boolean
   default: false # if true, the published artifacts will be zipped
 - name: checkoutSubmodules
-  type: boolean
-  default: false # if true, submodules will be checked out
+  type: string
+  default: 'false'
+  displayName: 'if "true", submodules will be checked out, "recursive" will also check out submodules of submodules'
 - name: pool
   type: object
   default: {} # pool to use for the build
+- name: testProjects
+  type: string
+  default: '**/*Tests/*Tests.csproj'
+  displayName: 'Test projects to run'
 - name: testFilter
   type: string
   default: '' # filter for unit tests; all tests by default
@@ -77,6 +82,14 @@ parameters:
   type: string
   default: ''
   displayName: 'Password for the code signing certificate'
+- name: buildSolutionFile
+  type: string
+  default: ''
+  displayName: 'Solution file to build. If empty, the default solution file in the working directory will be used'
+- name: packageSolutionFile
+  type: string
+  default: ''
+  displayName: 'Solution file to package. If empty, the default solution file in the working directory will be used'
 
 jobs:
 - job: Build
@@ -86,8 +99,13 @@ jobs:
     inputs:
       version: ${{ parameters.dotNetCoreVersion }}
 
+  - ${{ if ne(parameters.checkoutSubmodules, 'false') }}:
+    # enable long paths, especially on submodules
+    - script: git config --system core.longpaths true
+      displayName: 'Enable long paths for git'
+
   - checkout: self
-    submodules: '{{ parameters.checkoutSubmodules }}'
+    submodules: ${{ parameters.checkoutSubmodules }}
 
   ## retrieve the version suffix from the props file and set it as a variable
   - powershell: |
@@ -146,11 +164,11 @@ jobs:
       nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
       nuGetSources: ${{ parameters.nuGetSources }}
       
-  - script: dotnet build --configuration $(buildConfiguration) --no-restore
+  - script: dotnet build ${{ parameters.buildSolutionFile }} --configuration $(buildConfiguration) --no-restore /p:ContinuousIntegrationBuild=true
     displayName: 'dotnet build $(buildConfiguration)'
     condition: and(succeeded(), eq(variables.UseVersionSuffix, 'false'))
 
-  - script: dotnet build --configuration $(buildConfiguration) --version-suffix $(VersionSuffix) --no-restore
+  - script: dotnet build ${{ parameters.buildSolutionFile }} --configuration $(buildConfiguration) --version-suffix $(VersionSuffix) --no-restore /p:ContinuousIntegrationBuild=true
     displayName: 'dotnet build $(buildConfiguration) with version suffix'
     condition: and(succeeded(), eq(variables.UseVersionSuffix, 'true'))
 
@@ -195,16 +213,16 @@ jobs:
     condition: and(succeeded(), ne('${{ parameters.testFilter }}', ''))
     inputs:
       command: test
-      projects: '**/*Tests/*Tests.csproj'
-      arguments: '--configuration $(buildConfiguration) --no-restore --filter ${{ parameters.testFilter }}'
+      projects: ${{ parameters.testProjects }}
+      arguments: '--configuration $(buildConfiguration) --no-restore  --no-build --filter ${{ parameters.testFilter }}'
 
   - task: DotNetCoreCLI@2
     displayName: 'dotnet test UnitTests'
     condition: and(succeeded(), eq('${{ parameters.testFilter }}', ''))
     inputs:
       command: test
-      projects: '**/*Tests/*Tests.csproj'
-      arguments: '--configuration $(buildConfiguration) --no-restore'
+      projects: ${{ parameters.testProjects }}
+      arguments: '--configuration $(buildConfiguration) --no-restore  --no-build'
 
   - template: strongNameSigning.yml
     parameters:
@@ -221,6 +239,7 @@ jobs:
         versionSuffix: $(VersionSuffix)
         codeSignerCertificate: ${{ parameters.codeSignerCertificate }}
         codeSignerPassword: ${{ parameters.codeSignerPassword }}
+        packageSolutionFile: ${{ parameters.packageSolutionFile }}
   
   - ${{ if parameters.publishArtifacts }}:
     - template: publish.yml
