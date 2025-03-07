@@ -75,4 +75,4 @@ jobs:
           --file ${{ parameters.dockerFile }} \
           $(System.DefaultWorkingDirectory)/target
       fi
-    displayName: 'Build and Push Docker image on ${{ parameters.dockerRegistry }}''
+    displayName: 'Build and Push Docker image on ${{ parameters.dockerRegistry }}'
