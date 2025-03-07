@@ -49,7 +49,7 @@ jobs:
       cleanDestinationFolder: true
       overwriteExistingFiles: false
   - task: Docker@2
-    displayName: Docker Login
+    displayName: 'Docker login to registry'
     inputs:
       containerRegistry: ${{ parameters.containerRegistry }}
       command: "login"
@@ -75,4 +75,4 @@ jobs:
           --file ${{ parameters.dockerFile }} \
           $(System.DefaultWorkingDirectory)/target
       fi
-    displayName: Build and Push Docker image on ${{ parameters.dockerRegistry }}
+    displayName: 'Build and Push Docker image on ${{ parameters.dockerRegistry }}''
