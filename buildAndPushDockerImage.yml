@@ -2,6 +2,10 @@
 # File: buildAndPushDockerImage.yml
 
 parameters:
+- name: dependsOn
+  type: string
+  default: []
+  displayName: 'The name of the job that this job depends on'
 - name: publishedCodeArtifactName
   type: string
   default: 'ZipDeployArchive'
@@ -26,6 +30,7 @@ parameters:
 jobs:
 - job: createDockerImage
   displayName: Docker image
+  dependsOn: ${{ parameters.dependsOn }}
   steps:
   - task: DownloadPipelineArtifact@2
     displayName: 'Download published code artifact'
