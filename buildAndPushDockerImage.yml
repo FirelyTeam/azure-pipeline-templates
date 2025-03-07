@@ -40,11 +40,11 @@ jobs:
     displayName: 'Download published code artifact'
     inputs:
       artifactName: ${{ parameters.publishedCodeArtifactName }}
-      targetPath: '$(System.DefaultWorkingDirectory)'
+      targetPath: '$(System.DefaultWorkingDirectory)/artifact'
   - task: ExtractFiles@1
     displayName: 'Extract zip files'
     inputs:
-      archiveFilePatterns: '**/*.zip' 
+      archiveFilePatterns: '$(System.DefaultWorkingDirectory)/artifact/**/*.zip' 
       destinationFolder: $(System.DefaultWorkingDirectory)/target
       cleanDestinationFolder: true
       overwriteExistingFiles: false
@@ -54,6 +54,8 @@ jobs:
       containerRegistry: ${{ parameters.containerRegistry }}
       command: "login"
   - bash: |
+      # jump to the target directory where the published code is extracted
+      cd $(System.DefaultWorkingDirectory)/target 
       docker run --privileged --rm tonistiigi/binfmt --install arm64
       docker run --privileged --rm tonistiigi/binfmt
       docker buildx create --use
