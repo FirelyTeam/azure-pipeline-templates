@@ -10,6 +10,10 @@ parameters:
   type: string
   default: 'ZipDeployArchive'
   displayName: 'The name of the artifact that contains the published code'
+- name: dockerFile
+  type: string
+  default: './src/Dockerfile'
+  displayName: 'The complete path of the Dockerfile'
 - name: containerRegistry
   type: string
   displayName: 'The name of the Azure Container Registry connection'
@@ -57,7 +61,7 @@ jobs:
         --build-arg=PUBLISHED_CODE=azuredevops \
         --tag ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:$(Build.BuildNumber) \
         --push \
-        --file $(Build.SourcesDirectory)/src/Vonk.Server/Dockerfile \
+        --file ${{ parameters.dockerFile }} \
         $(System.DefaultWorkingDirectory)/target
     displayName: Build and Push Docker image on ${{ parameters.dockerRegistry }}
   - bash: |
