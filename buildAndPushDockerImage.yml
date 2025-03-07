@@ -3,7 +3,7 @@
 
 parameters:
 - name: dependsOn
-  type: string
+  type: object
   default: []
   displayName: 'The name of the job that this job depends on'
 - name: publishedCodeArtifactName
@@ -57,15 +57,20 @@ jobs:
       docker run --privileged --rm tonistiigi/binfmt --install arm64
       docker run --privileged --rm tonistiigi/binfmt
       docker buildx create --use
-      docker buildx build --platform linux/amd64,linux/arm64 \
-        --build-arg=PUBLISHED_CODE=azuredevops \
-        --tag ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:$(Build.BuildNumber) \
-        --push \
-        --file ${{ parameters.dockerFile }} \
-        $(System.DefaultWorkingDirectory)/target
+      if [ "${{ parameters.addLatestTag }}" = "true" ]; then 
+        docker buildx build --platform linux/amd64,linux/arm64 \
+          --build-arg=PUBLISHED_CODE=azuredevops \
+          --tag ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:$(Build.BuildNumber) \
+          --tag ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:latest \
+          --push \
+          --file ${{ parameters.dockerFile }} \
+          $(System.DefaultWorkingDirectory)/target
+      else
+        docker buildx build --platform linux/amd64,linux/arm64 \
+          --build-arg=PUBLISHED_CODE=azuredevops \
+          --tag ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:$(Build.BuildNumber) \
+          --push \
+          --file ${{ parameters.dockerFile }} \
+          $(System.DefaultWorkingDirectory)/target
+      fi
     displayName: Build and Push Docker image on ${{ parameters.dockerRegistry }}
-  - bash: |
-      docker tag ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:$(Build.BuildNumber) ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:latest
-      docker push ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:latest
-    displayName: Tag and push latest image on ${{ parameters.dockerRegistry }}
-    condition: ${{ parameters.addLatestTag }}
