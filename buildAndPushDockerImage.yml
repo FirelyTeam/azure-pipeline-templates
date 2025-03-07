@@ -54,6 +54,7 @@ jobs:
       containerRegistry: ${{ parameters.containerRegistry }}
       command: "login"
   - bash: |
+      echo "parameter addLatestTag is ${{ parameters.addLatestTag }}"
       docker run --privileged --rm tonistiigi/binfmt --install arm64
       docker run --privileged --rm tonistiigi/binfmt
       docker buildx create --use
