@@ -5,28 +5,23 @@ parameters:
 - name: publishedCodeArtifactName
   type: string
   default: 'ZipDeployArchive'
-  displayName: 'Published Code Artifact Name'
-  description: 'The name of the artifact that contains the published code'
+  displayName: 'The name of the artifact that contains the published code'
 - name: containerRegistry
   type: string
-  displayName: 'Azure Container Registry Connection'
-  description: 'The name of the Azure Container Registry connection'
+  displayName: 'The name of the Azure Container Registry connection'
   default: 'AzureContainerRegistryConnection'
 - name: addLatestTag
   type: boolean
-  displayName: 'Add latest tag'
   default: true
-  description: 'Add the latest tag to the image'
+  displayName: 'Add the latest tag to the image'
 - name: dockerRegistry
   type: string
-  displayName: 'Firely Docker Registry'
   default: 'firely.azurecr.io'
-  description: 'The name of the Firely Docker Registry'
+  displayName: 'The name of the Docker Registry'
 - name: imageRepositoryName
   type: string
-  displayName: 'Firely Server Image Repository Name'
   default: 'firely/server'
-  description: 'The name of the Firely Server Image Repository'
+  displayName: 'The name of the Docker Image Repository'
 
 jobs:
 - job: createDockerImage
