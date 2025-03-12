@@ -1,0 +1,77 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: buildAndPushDockerImage.yml
+
+parameters:
+- name: dependsOn
+  type: object
+  default: []
+  displayName: 'The name of the job that this job depends on'
+- name: publishedCodeArtifactName
+  type: string
+  default: 'ZipDeployArchive'
+  displayName: 'The name of the artifact that contains the published binaries'
+- name: dockerFile
+  type: string
+  default: './src/Dockerfile'
+  displayName: 'The complete path of the Dockerfile'
+- name: containerRegistry
+  type: string
+  displayName: 'The name of the Azure Container Registry connection'
+  default: 'AzureContainerRegistryConnection'
+- name: addLatestTag
+  type: boolean
+  default: true
+  displayName: 'Add the latest tag to the image'
+- name: dockerRegistry
+  type: string
+  default: 'firely.azurecr.io'
+  displayName: 'The name of the Docker Registry'
+- name: imageRepositoryName
+  type: string
+  displayName: 'The name of the Docker Image Repository'
+
+jobs:
+- job: createDockerImage
+  displayName: Docker image
+  dependsOn: ${{ parameters.dependsOn }}
+  steps:
+  - task: DownloadPipelineArtifact@2
+    displayName: 'Download published code artifact'
+    inputs:
+      artifactName: ${{ parameters.publishedCodeArtifactName }}
+      targetPath: '$(System.DefaultWorkingDirectory)/artifact'
+  - task: ExtractFiles@1
+    displayName: 'Extract zip files'
+    inputs:
+      archiveFilePatterns: '$(System.DefaultWorkingDirectory)/artifact/**/*.zip' 
+      destinationFolder: $(System.DefaultWorkingDirectory)/target
+      cleanDestinationFolder: true
+      overwriteExistingFiles: false
+  - task: Docker@2
+    displayName: 'Docker login to registry'
+    inputs:
+      containerRegistry: ${{ parameters.containerRegistry }}
+      command: "login"
+  - bash: |
+      # jump to the target directory where the published code is extracted
+      cd $(System.DefaultWorkingDirectory)/target 
+      docker run --privileged --rm tonistiigi/binfmt --install arm64
+      docker run --privileged --rm tonistiigi/binfmt
+      docker buildx create --use
+      if [ "${{ parameters.addLatestTag }}" = "True" ]; then 
+        docker buildx build --platform linux/amd64,linux/arm64 \
+          --build-arg=PUBLISHED_CODE=azuredevops \
+          --tag ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:$(Build.BuildNumber) \
+          --tag ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:latest \
+          --push \
+          --file ${{ parameters.dockerFile }} \
+          $(System.DefaultWorkingDirectory)/target
+      else
+        docker buildx build --platform linux/amd64,linux/arm64 \
+          --build-arg=PUBLISHED_CODE=azuredevops \
+          --tag ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:$(Build.BuildNumber) \
+          --push \
+          --file ${{ parameters.dockerFile }} \
+          $(System.DefaultWorkingDirectory)/target
+      fi
+    displayName: 'Build and Push Docker image on ${{ parameters.dockerRegistry }}'
