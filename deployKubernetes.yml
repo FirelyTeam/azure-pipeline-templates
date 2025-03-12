@@ -1,0 +1,143 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: deployKubernetes.yml 
+
+# This Azure Pipeline template is used to deploy an application to a Kubernetes cluster.
+
+parameters:
+- name: displayName
+  type: string
+  default: ''
+  displayName: 'Display name of this deployment job'
+- name: kubernetesServiceConnection
+  type: string
+  default: ''
+  displayName: 'Name of the Kubernetes Service Connection'
+- name: helmVersion
+  type: string
+  default: 'latest'
+  displayName: 'Helm version to install'
+- name: kubectlVersion
+  type: string
+  default: 'latest'
+  displayName: 'Kubectl version to install'
+- name: localValues
+  type: string
+  default: ''
+  displayName: 'Relative path to the values.yaml file on the local repository'
+- name: infraValues
+  type: string
+  default: ''
+  displayName: 'Relative path to the common values.yaml file on the infrastructure repository'
+- name: helmChartRepository
+  type: string
+  default: ''
+  displayName: 'Helm chart repository of the application'
+- name: helmChartName
+  type: string
+  default: ''
+  displayName: 'Name of the Helm chart of the application'
+- name: helmChartVersion
+  type: string
+  default: ''
+  displayName: 'Version of the Helm chart of the application' 
+- name: imageRepository
+  type: string
+  default: ''
+  displayName: 'Repository of Docker image'
+- name: imageTag
+  type: string 
+  default: ''
+  displayName: 'Tag of Docker image'
+- name: namespace
+  type: string
+  default: 'default'
+  displayName: 'The namespace where the application will be deployed'
+- name: releaseName
+  type: string
+  default: ''
+  displayName: 'Name of the release'
+- name: environment
+  type: string
+  default: ''
+  displayName: 'Target environment name and optionally a resource name to record the deployment history'
+
+jobs:
+- deployment: deployToKubernetes
+  environment: ${{ parameters.environment }}
+  displayName: ${{ parameters.displayName }}
+  strategy:
+    runOnce:
+      deploy:
+        steps:
+        - download: none
+        - checkout: self
+          path: localRepo
+          displayName: 'Checkout local repository'
+        - checkout: vonkInfrastructureRepo
+          path: infraRepo
+          displayName: 'Checkout infrastructure repository'
+        - task: HelmInstaller@1
+          displayName: 'Install Helm ${{ parameters.helmVersion }}'
+          inputs:
+            helmVersionToInstall: ${{ parameters.helmVersion }}
+        - task: KubectlInstaller@0
+          displayName: 'Install kubectl ${{ parameters.kubectlVersion }}'
+          inputs:
+            kubectlVersion: ${{ parameters.kubectlVersion }}
+        
+        - powershell: |
+            Write-Host "Current Directory: $(Get-Location)"
+            Write-Host "Pipeline.Workspace: $(Pipeline.Workspace)"
+            Write-Host "Listing contents of Pipeline.Workspace:"
+            ls $(Pipeline.Workspace)
+            Write-Host "Listing contents of local repository (using Pipeline.Workspace):"
+            ls $(Pipeline.Workspace)/localRepo
+            Write-Host "Listing contents of infrastructure repository (using Pipeline.Workspace):"
+            ls $(Pipeline.Workspace)/infraRepo
+            $filesToCheck = @("$(Pipeline.Workspace)/localRepo/${{ parameters.localValues }}", "$(Pipeline.Workspace)/infraRepo/${{ parameters.infraValues }}")
+            foreach ($filePath in $filesToCheck) {
+                if (-not (Test-Path $filePath)) {
+                    Write-Host "File $filePath does not exist"
+                    Exit 1
+                }
+            }
+          displayName: 'Check if files provided as parameters exists'
+
+        - task: HelmDeploy@0
+          displayName: 'helm add repo stable'
+          inputs:
+            connectionType: 'Kubernetes Service Connection'
+            kubernetesServiceConnection: ${{ parameters.kubernetesServiceConnection }}
+            command: repo
+            arguments: 'add "stable" "https://charts.helm.sh/stable" --force-update'
+        
+        - task: HelmDeploy@0
+          displayName: 'helm add repo firely'
+          inputs:
+            connectionType: 'Kubernetes Service Connection'
+            kubernetesServiceConnection: ${{ parameters.kubernetesServiceConnection }}
+            command: repo
+            arguments: 'add firely ${{ parameters.helmChartRepository }} --force-update'
+            failOnStderr: true  
+            
+        - task: HelmDeploy@0
+          displayName: 'helm update repo '
+          inputs:
+            connectionType: 'Kubernetes Service Connection'
+            kubernetesServiceConnection: ${{ parameters.kubernetesServiceConnection }}
+            command: repo
+            arguments: update
+            failOnStderr: true
+
+        - task: HelmDeploy@0
+          displayName: 'helm upgrade ${{ parameters.releaseName }}'
+          inputs:
+            connectionType: 'Kubernetes Service Connection'
+            kubernetesServiceConnection: ${{ parameters.kubernetesServiceConnection }}
+            command: upgrade
+            chartName: ${{ parameters.helmChartName }}
+            releaseName: ${{ parameters.releaseName }}
+            overrideValues: 'image.tag=${{ parameters.imageTag }},image.repository=${{ parameters.imageRepository }}'
+            valueFile: '$(Pipeline.Workspace)/localRepo/${{ parameters.localValues }}'
+            arguments: '--timeout 10m --atomic --version ${{ parameters.helmChartVersion }} --namespace ${{ parameters.namespace }} --create-namespace -f $(Pipeline.Workspace)/infraRepo/${{ parameters.infraValues }}'
+            failOnStderr: false            
