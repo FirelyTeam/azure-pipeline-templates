@@ -28,7 +28,6 @@ parameters:
   displayName: 'The name of the Docker Registry'
 - name: imageRepositoryName
   type: string
-  default: 'firely/server'
   displayName: 'The name of the Docker Image Repository'
 
 jobs:
