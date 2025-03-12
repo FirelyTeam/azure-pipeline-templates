@@ -9,7 +9,7 @@ parameters:
 - name: publishedCodeArtifactName
   type: string
   default: 'ZipDeployArchive'
-  displayName: 'The name of the artifact that contains the published code'
+  displayName: 'The name of the artifact that contains the published binaries'
 - name: dockerFile
   type: string
   default: './src/Dockerfile'
