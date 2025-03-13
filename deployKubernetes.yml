@@ -14,11 +14,9 @@ parameters:
   displayName: 'Display name of this deployment job'
 - name: environment
   type: string
-  default: ''
   displayName: 'Target environment name'
 - name: kubernetesServiceConnection
   type: string
-  default: ''
   displayName: 'Name of the Kubernetes Service Connection in Azure Devops'
 - name: helmVersion
   type: string
@@ -30,43 +28,43 @@ parameters:
   displayName: 'Kubectl version to install'
 - name: localValues
   type: string
-  default: ''
   displayName: 'Relative path to the values.yaml file on the local repository'
 - name: infraValues
   type: string
-  default: ''
   displayName: 'Relative path to the common values.yaml file on the infrastructure repository'
 - name: infraRepositoryName
   type: string
-  default: ''
   displayName: 'Name of the infrastructure repository'
 - name: helmChartRepository
   type: string
   default: ''
-  displayName: 'Helm chart repository of the application'
+  displayName: 'Helm chart repository of the application'  
+- name: helmChartRepositories
+  type: object
+  default: []
+  displayName: 'Helm chart repositories of the application'
 - name: helmChartName
   type: string
-  default: ''
   displayName: 'Name of the Helm chart of the application'
 - name: helmChartVersion
   type: string
-  default: ''
   displayName: 'Version of the Helm chart of the application' 
 - name: image
   type: string
-  default: ''
   displayName: 'The Docker image including the registry, i.e firely.azurecr.io/firely/server'
 - name: imageTag
   type: string 
-  default: ''
   displayName: 'Tag of Docker image'
+- name: deployTimeout
+  type: string
+  default: '10m'
+  displayName: 'Timeout for the deployment with Helm'
 - name: namespace
   type: string
   default: 'default'
   displayName: 'The namespace of the Kubernetes cluster where the application will be deployed'
 - name: releaseName
   type: string
-  default: ''
   displayName: 'Name of the release used by Helm'
 
 jobs:
@@ -119,14 +117,15 @@ jobs:
             command: repo
             arguments: 'add "stable" "https://charts.helm.sh/stable" --force-update'
         
-        - task: HelmDeploy@0
-          displayName: 'helm add repo firely'
-          inputs:
-            connectionType: 'Kubernetes Service Connection'
-            kubernetesServiceConnection: ${{ parameters.kubernetesServiceConnection }}
-            command: repo
-            arguments: 'add firely ${{ parameters.helmChartRepository }} --force-update'
-            failOnStderr: true  
+        - ${{ each helmChartRepository in parameters.helmChartRepositories }}:
+          - task: HelmDeploy@0
+            displayName: 'helm add repo ${{ helmChartRepository.name }}'
+            inputs:
+              connectionType: 'Kubernetes Service Connection'
+              kubernetesServiceConnection: ${{ parameters.kubernetesServiceConnection }}
+              command: repo
+              arguments: 'add ${{ helmChartRepository.name }} ${{ helmChartRepository.repo }} --force-update'
+              failOnStderr: true  
             
         - task: HelmDeploy@0
           displayName: 'helm update repo '
@@ -147,5 +146,5 @@ jobs:
             releaseName: ${{ parameters.releaseName }}
             overrideValues: 'image.tag=${{ parameters.imageTag }},image.repository=${{ parameters.image }}'
             valueFile: '$(Pipeline.Workspace)/localRepo/${{ parameters.localValues }}'
-            arguments: '--timeout 10m --atomic --version ${{ parameters.helmChartVersion }} --namespace ${{ parameters.namespace }} --create-namespace -f $(Pipeline.Workspace)/infraRepo/${{ parameters.infraValues }}'
+            arguments: '--timeout ${{ parameters.deployTimeout }} --atomic --version ${{ parameters.helmChartVersion }} --namespace ${{ parameters.namespace }} --create-namespace -f $(Pipeline.Workspace)/infraRepo/${{ parameters.infraValues }}'
             failOnStderr: false            
