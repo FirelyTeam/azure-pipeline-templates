@@ -34,15 +34,16 @@ parameters:
   displayName: 'Relative path to the common values.yaml file on the infrastructure repository'
 - name: infraRepositoryName
   type: string
-  displayName: 'Name of the infrastructure repository'
-- name: helmChartRepository
-  type: string
-  default: ''
-  displayName: 'Helm chart repository of the application'  
+  displayName: 'Name of the infrastructure repository' 
 - name: helmChartRepositories
   type: object
   default: []
-  displayName: 'Helm chart repositories of the application'
+  # for example:
+  # - name: firely
+  #   repo: https://firely.azurecr.io/helm
+  # - name: bitnami
+  #   repo: https://charts.bitnami.com/bitnami
+  displayName: 'Helm chart repositories of the application, format name: and repo:'
 - name: helmChartName
   type: string
   displayName: 'Name of the Helm chart of the application'
@@ -92,22 +93,30 @@ jobs:
             kubectlVersion: ${{ parameters.kubectlVersion }}
         
         - powershell: |
+            # check if the Helm value files provided as parameters exists in the repositories
+
             Write-Host "Current Directory: $(Get-Location)"
             Write-Host "Pipeline.Workspace: $(Pipeline.Workspace)"
             Write-Host "Listing contents of Pipeline.Workspace:"
             ls $(Pipeline.Workspace)
+
             Write-Host "Listing contents of local repository (using Pipeline.Workspace):"
             ls $(Pipeline.Workspace)/localRepo
+
             Write-Host "Listing contents of infrastructure repository (using Pipeline.Workspace):"
             ls $(Pipeline.Workspace)/infraRepo
+
             $filesToCheck = @("$(Pipeline.Workspace)/localRepo/${{ parameters.localValues }}", "$(Pipeline.Workspace)/infraRepo/${{ parameters.infraValues }}")
             foreach ($filePath in $filesToCheck) {
                 if (-not (Test-Path $filePath)) {
                     Write-Host "File $filePath does not exist"
                     Exit 1
                 }
+                else {
+                    Write-Host "Success: File $filePath exists"
+                }
             }
-          displayName: 'Check if files provided as parameters exists'
+          displayName: 'Check if value files provided as parameters exists'
 
         - task: HelmDeploy@0
           displayName: 'helm add repo stable'
