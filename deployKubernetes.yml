@@ -1,7 +1,7 @@
 # Repo: FirelyTeam/azure-pipeline-templates
 # File: deployKubernetes.yml 
 
-# This Azure Pipeline template is used to deploy a Dcokerized application to a Kubernetes cluster.
+# This Azure Pipeline template is used to deploy a Dockerized application packaged as a helm chart to a Kubernetes cluster.
 
 parameters:
 - name: deploymentJobName
