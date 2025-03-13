@@ -1,17 +1,21 @@
 # Repo: FirelyTeam/azure-pipeline-templates
 # File: deployKubernetes.yml 
 
-# This Azure Pipeline template is used to deploy an application to a Kubernetes cluster.
+# This Azure Pipeline template is used to deploy a Dcokerized application to a Kubernetes cluster.
 
 parameters:
 - name: displayName
   type: string
-  default: ''
+  default: 'Deyploy to Kubernetes'
   displayName: 'Display name of this deployment job'
+- name: environment
+  type: string
+  default: ''
+  displayName: 'Target environment name'
 - name: kubernetesServiceConnection
   type: string
   default: ''
-  displayName: 'Name of the Kubernetes Service Connection'
+  displayName: 'Name of the Kubernetes Service Connection in Azure Devops'
 - name: helmVersion
   type: string
   default: 'latest'
@@ -28,6 +32,10 @@ parameters:
   type: string
   default: ''
   displayName: 'Relative path to the common values.yaml file on the infrastructure repository'
+- name: infraRepositoryName
+  type: string
+  default: ''
+  displayName: 'Name of the infrastructure repository'
 - name: helmChartRepository
   type: string
   default: ''
@@ -40,10 +48,10 @@ parameters:
   type: string
   default: ''
   displayName: 'Version of the Helm chart of the application' 
-- name: imageRepository
+- name: image
   type: string
   default: ''
-  displayName: 'Repository of Docker image'
+  displayName: 'The Docker image including the registry, i.e firely.azurecr.io/firely/server'
 - name: imageTag
   type: string 
   default: ''
@@ -51,15 +59,11 @@ parameters:
 - name: namespace
   type: string
   default: 'default'
-  displayName: 'The namespace where the application will be deployed'
+  displayName: 'The namespace of the Kubernetes cluster where the application will be deployed'
 - name: releaseName
   type: string
   default: ''
-  displayName: 'Name of the release'
-- name: environment
-  type: string
-  default: ''
-  displayName: 'Target environment name and optionally a resource name to record the deployment history'
+  displayName: 'Name of the release used by Helm'
 
 jobs:
 - deployment: deployToKubernetes
@@ -73,7 +77,7 @@ jobs:
         - checkout: self
           path: localRepo
           displayName: 'Checkout local repository'
-        - checkout: vonkInfrastructureRepo
+        - checkout: ${{ parameters.infraRepositoryName }}
           path: infraRepo
           displayName: 'Checkout infrastructure repository'
         - task: HelmInstaller@1
@@ -137,7 +141,7 @@ jobs:
             command: upgrade
             chartName: ${{ parameters.helmChartName }}
             releaseName: ${{ parameters.releaseName }}
-            overrideValues: 'image.tag=${{ parameters.imageTag }},image.repository=${{ parameters.imageRepository }}'
+            overrideValues: 'image.tag=${{ parameters.imageTag }},image.repository=${{ parameters.image }}'
             valueFile: '$(Pipeline.Workspace)/localRepo/${{ parameters.localValues }}'
             arguments: '--timeout 10m --atomic --version ${{ parameters.helmChartVersion }} --namespace ${{ parameters.namespace }} --create-namespace -f $(Pipeline.Workspace)/infraRepo/${{ parameters.infraValues }}'
             failOnStderr: false            
