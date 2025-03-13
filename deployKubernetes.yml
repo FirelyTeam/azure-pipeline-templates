@@ -4,6 +4,10 @@
 # This Azure Pipeline template is used to deploy a Dcokerized application to a Kubernetes cluster.
 
 parameters:
+- name: deploymentJobName
+  type: string
+  default: 'deployToKubernetes'
+  displayName: 'Name of the deployment job'
 - name: displayName
   type: string
   default: 'Deyploy to Kubernetes'
@@ -66,7 +70,7 @@ parameters:
   displayName: 'Name of the release used by Helm'
 
 jobs:
-- deployment: deployToKubernetes
+- deployment: ${{ parameters.deploymentJobName }}
   environment: ${{ parameters.environment }}
   displayName: ${{ parameters.displayName }}
   strategy:
