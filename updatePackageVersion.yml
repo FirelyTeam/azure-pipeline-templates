@@ -1,0 +1,68 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: updatePackageVersion.yml
+
+# This template updates the version of a package in a project property file.
+
+parameters:
+  - name: packageName
+    type: string
+    displayName: 'The name of the package to update, i.e. Hl7.Fhir.Base'
+  - name: packageVersion
+    type: string
+    displayName: 'The version of the package. Use "" to keep the existing version specified in the props file. Use "*" for latest alpha version. Use "5.5" for the latest alpha version of 5.5.x. Use "5.11.1$" for the exact version 5.11.1'
+    default: ''
+  - name: propertyFilePath
+    type: string
+    displayName: 'Property file path, i.e. ./src/Vonk.props'
+  - name: packageProperty
+    type: string
+    displayName: 'Property name in the property file, i.e. FhirNetApiVersion'
+  - name: displayName
+    type: string
+    displayName: 'Display name for this step'
+    default: 'Update Package version'
+
+steps:
+- powershell: |
+    Write-Host "Input Package version: [${{ parameters.packageVersion }}]"
+
+    Write-Host "Retrieve the latest version (including pre-release) of the package ${{ parameters.packageName }} matching the expression ${{ parameters.packageVersion }}"
+    $packageVersion = (dotnet package search ${{ parameters.packageName }} --prerelease --source https://nuget.pkg.github.com/FirelyTeam/index.json --format json --exact-match --verbosity minimal | ConvertFrom-Json).SearchResult[0].Packages | 
+      Where-Object { $_.Version -match "^${{ parameters.packageVersion }}" } | 
+      Sort-Object { 
+        $version = $_.Version -replace "[^0-9\.]", "" 
+        [System.Version]$version 
+      }, { $_.Version } -Descending | 
+      Select-Object -First 1 -ExpandProperty Version
+
+    $xmlFilePath = "${{ parameters.propertyFilePath }}"
+
+    # check if $xmlFilePath exists
+    if (-not (Test-Path $xmlFilePath)) {
+        Write-Host "Property file not found: $xmlFilePath"
+        Exit 1
+    }
+
+    # Load the XML
+    [xml]$xml = Get-Content $xmlFilePath
+
+    # Define the XML namespace (since the XML file has a namespace)
+    $namespace = New-Object Xml.XmlNamespaceManager($xml.NameTable)
+    $namespace.AddNamespace("msb", "http://schemas.microsoft.com/developer/msbuild/2003")
+
+    # Find the package propery element and update it
+    $packageVersionNode = $xml.SelectSingleNode("//msb:PropertyGroup/msb:${{ parameters.packageProperty }}", $namespace)
+    if ($null -ne $packageVersionNode) {
+        $packageVersionNode.InnerText = $packageVersion
+        # Save the updated XML back to the file
+        $xml.Save($xmlFilePath)
+        Write-Host "Package version updated to ${packageVersion}:"
+    } 
+    else {
+        Write-Host "${{ parameters.packageProperty }} element not found!"
+        Exit 1
+    }
+
+    Get-Content -path $xmlFilePath
+  displayName: ${{ parameters.displayName }}
+  condition: ne('${{ parameters.packageVersion }}', '') # Only update the version if a version is provided
