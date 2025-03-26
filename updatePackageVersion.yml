@@ -17,12 +17,22 @@ parameters:
   - name: packageProperty
     type: string
     displayName: 'Property name in the property file, i.e. FhirNetApiVersion'
+  - name: nuGetServiceConnections
+    type: string
+    default: ''
+    displayName: 'The comma-separated list of NuGet service connection names for feeds outside this organization or collection'
   - name: displayName
     type: string
     displayName: 'Display name for this step'
     default: 'Update Package version'
 
 steps:
+- ${{ if ne(parameters.nuGetServiceConnections, '') }}:
+  - task: NuGetAuthenticate@1
+    displayName: 'NuGet Authenticate'
+    inputs:
+      nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
+
 - powershell: |
     Write-Host "Input Package version: [${{ parameters.packageVersion }}]"
 
