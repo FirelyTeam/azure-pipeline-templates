@@ -75,4 +75,4 @@ steps:
 
     Get-Content -path $xmlFilePath
   displayName: ${{ parameters.displayName }}
-  condition: ne('${{ parameters.packageVersion }}', '') # Only update the version if a version is provided
+  condition: ${{ ne(parameters.packageVersion, '' }} # Only update the version if a version is provided
