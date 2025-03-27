@@ -27,14 +27,18 @@ parameters:
     default: 'Update Package version'
 
 steps:
-- ${{ if ne(parameters.nuGetServiceConnections, '') }}:
-  - task: NuGetAuthenticate@1
-    displayName: 'NuGet Authenticate'
-    inputs:
-      nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
+- task: NuGetAuthenticate@1
+  displayName: 'NuGet Authenticate'
+  inputs:
+    nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
 
 - powershell: |
     Write-Host "Input Package version: [${{ parameters.packageVersion }}]"
+    if ( "${{ parameters.packageVersion }}" -eq "" ) 
+    {
+      Write-Host "No package version specified, keeping the existing version in the property file."
+      Exit 0
+    }
 
     Write-Host "Retrieve the latest version (including pre-release) of the package ${{ parameters.packageName }} matching the expression ${{ parameters.packageVersion }}"
     $packageVersion = (dotnet package search ${{ parameters.packageName }} --prerelease --source https://nuget.pkg.github.com/FirelyTeam/index.json --format json --exact-match --verbosity minimal | ConvertFrom-Json).SearchResult[0].Packages | 
@@ -75,4 +79,3 @@ steps:
 
     Get-Content -path $xmlFilePath
   displayName: ${{ parameters.displayName }}
-  condition: ne('${{ parameters.packageVersion }}', '') # Only update the version if a version is provided
