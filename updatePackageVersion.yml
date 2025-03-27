@@ -34,7 +34,7 @@ steps:
 
 - powershell: |
     Write-Host "Input Package version: [${{ parameters.packageVersion }}]"
-    if ( ${{ parameters.packageVersion }} -eq "" ) 
+    if ( "${{ parameters.packageVersion }}" -eq "" ) 
     {
       Write-Host "No package version specified, keeping the existing version in the property file."
       Exit 0
