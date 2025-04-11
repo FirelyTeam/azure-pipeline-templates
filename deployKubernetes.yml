@@ -73,7 +73,7 @@ parameters:
   - checkout: self
     path: localRepo
     displayName: 'Checkout local repository'
-  displayName: 'Checkout steps for the local repository. Use "none" if you want to skip the checkout of the local repository.'
+  displayName: 'Checkout steps for the local repository.'
 
 jobs:
 - deployment: ${{ parameters.deploymentJobName }}
