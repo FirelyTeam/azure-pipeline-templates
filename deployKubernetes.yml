@@ -68,7 +68,7 @@ parameters:
   type: string
   displayName: 'Name of the release used by Helm'
 - name: checkoutSteps
-  type: StepList
+  type: stepList
   default: 
   - checkout: self
     path: localRepo
