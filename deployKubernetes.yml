@@ -10,7 +10,7 @@ parameters:
   displayName: 'Name of the deployment job'
 - name: displayName
   type: string
-  default: 'Deyploy to Kubernetes'
+  default: 'Deploy to Kubernetes'
   displayName: 'Display name of this deployment job'
 - name: environment
   type: string
