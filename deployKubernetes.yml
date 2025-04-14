@@ -10,7 +10,7 @@ parameters:
   displayName: 'Name of the deployment job'
 - name: displayName
   type: string
-  default: 'Deyploy to Kubernetes'
+  default: 'Deploy to Kubernetes'
   displayName: 'Display name of this deployment job'
 - name: environment
   type: string
@@ -67,6 +67,13 @@ parameters:
 - name: releaseName
   type: string
   displayName: 'Name of the release used by Helm'
+- name: checkoutSteps
+  type: stepList
+  default: 
+  - checkout: self
+    path: localRepo
+    displayName: 'Checkout local repository'
+  displayName: 'Checkout steps for the local repository.'
 
 jobs:
 - deployment: ${{ parameters.deploymentJobName }}
@@ -77,9 +84,8 @@ jobs:
       deploy:
         steps:
         - download: none
-        - checkout: self
-          path: localRepo
-          displayName: 'Checkout local repository'
+        - ${{ each step in parameters.checkoutSteps }}:
+          - ${{ step }}
         - checkout: ${{ parameters.infraRepositoryName }}
           path: infraRepo
           displayName: 'Checkout infrastructure repository'
