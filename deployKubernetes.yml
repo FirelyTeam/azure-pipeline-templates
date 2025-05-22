@@ -67,6 +67,10 @@ parameters:
 - name: releaseName
   type: string
   displayName: 'Name of the release used by Helm'
+- name: dependsOn
+  type: string
+  default: ''
+  displayName: 'Name of the job this deployment depends on'
 - name: checkoutSteps
   type: stepList
   default: 
@@ -77,6 +81,8 @@ parameters:
 
 jobs:
 - deployment: ${{ parameters.deploymentJobName }}
+  ${{ if ne(parameters.dependsOn, '') }}:
+    dependsOn: ${{ parameters.dependsOn }}
   environment: ${{ parameters.environment }}
   displayName: ${{ parameters.displayName }}
   strategy:
