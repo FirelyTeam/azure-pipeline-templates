@@ -55,11 +55,13 @@ jobs:
       command: "login"
   - bash: |
       # jump to the target directory where the published code is extracted if artifact is used, otherwise use the default repository root folder.
+      
       if [ -d "$(System.DefaultWorkingDirectory)/target" ]; then
-        cd $(System.DefaultWorkingDirectory)/target
+        workingDir="$(System.DefaultWorkingDirectory)/target"
       else
-        cd $(System.DefaultWorkingDirectory)
+        workingDir="$(System.DefaultWorkingDirectory)"
       fi
+      cd $workingDir
       docker run --privileged --rm tonistiigi/binfmt --install arm64
       docker run --privileged --rm tonistiigi/binfmt
       docker buildx create --use
@@ -70,13 +72,13 @@ jobs:
           --tag ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:latest \
           --push \
           --file ${{ parameters.dockerFile }} \
-          $(System.DefaultWorkingDirectory)/target
+          $workingDir
       else
         docker buildx build --platform linux/amd64,linux/arm64 \
           --build-arg=PUBLISHED_CODE=azuredevops \
           --tag ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:$(Build.BuildNumber) \
           --push \
           --file ${{ parameters.dockerFile }} \
-          $(System.DefaultWorkingDirectory)/target
+          $workingDir
       fi
     displayName: 'Build and Push Docker image on ${{ parameters.dockerRegistry }}'
