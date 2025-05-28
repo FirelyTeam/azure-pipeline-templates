@@ -9,7 +9,7 @@ parameters:
 - name: publishedCodeArtifactName
   type: string
   default: 'ZipDeployArchive'
-  displayName: 'The name of the artifact that contains the published binaries'
+  displayName: 'The name of the artifact that contains the published binaries. If empty, no artifact is used.'
 - name: dockerFile
   type: string
   default: './src/Dockerfile'
@@ -35,26 +35,31 @@ jobs:
   displayName: Docker image
   dependsOn: ${{ parameters.dependsOn }}
   steps:
-  - task: DownloadPipelineArtifact@2
-    displayName: 'Download published code artifact'
-    inputs:
-      artifactName: ${{ parameters.publishedCodeArtifactName }}
-      targetPath: '$(System.DefaultWorkingDirectory)/artifact'
-  - task: ExtractFiles@1
-    displayName: 'Extract zip files'
-    inputs:
-      archiveFilePatterns: '$(System.DefaultWorkingDirectory)/artifact/**/*.zip' 
-      destinationFolder: $(System.DefaultWorkingDirectory)/target
-      cleanDestinationFolder: true
-      overwriteExistingFiles: false
+  - ${{ if ne(parameters.publishedCodeArtifactName, '') }}:
+    - task: DownloadPipelineArtifact@2
+      displayName: 'Download published code artifact'
+      inputs:
+        artifactName: ${{ parameters.publishedCodeArtifactName }}
+        targetPath: '$(System.DefaultWorkingDirectory)/artifact'
+    - task: ExtractFiles@1
+      displayName: 'Extract zip files'
+      inputs:
+        archiveFilePatterns: '$(System.DefaultWorkingDirectory)/artifact/**/*.zip' 
+        destinationFolder: $(System.DefaultWorkingDirectory)/target
+        cleanDestinationFolder: true
+        overwriteExistingFiles: false
   - task: Docker@2
     displayName: 'Docker login to registry'
     inputs:
       containerRegistry: ${{ parameters.containerRegistry }}
       command: "login"
   - bash: |
-      # jump to the target directory where the published code is extracted
-      cd $(System.DefaultWorkingDirectory)/target 
+      # jump to the target directory where the published code is extracted if artifact is used, otherwise use the default repository root folder.
+      if [ -d "$(System.DefaultWorkingDirectory)/target" ]; then
+        cd $(System.DefaultWorkingDirectory)/target
+      else
+        cd $(System.DefaultWorkingDirectory)
+      fi
       docker run --privileged --rm tonistiigi/binfmt --install arm64
       docker run --privileged --rm tonistiigi/binfmt
       docker buildx create --use
