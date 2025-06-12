@@ -1,0 +1,29 @@
+
+steps:
+  - powershell: |
+        $projectFiles = Get-ChildItem -Recurse -Filter "*.csproj"
+        $hasPrerelease = $false
+        foreach ($project in $projectFiles) {
+            $content = Get-Content $project.FullName
+            $packageRefs = $content | Select-String -Pattern '<PackageReference.*Version=".*-.*"'
+            
+            if ($packageRefs) {
+                Write-Host "Prerelease packages found in $($project.Name)"
+                try{
+                    $packageRefs | ForEach-Object { Write-Host $_.Line.Trim() }
+                } catch {
+                    Write-Host "Error processing package references in $($project.Name): $_"
+                }
+                $hasPrerelease = $true
+            }
+        }
+
+        if ($hasPrerelease) {
+            exit 1
+        }
+        else {
+            Write-Host "No pre-release packages found in project files."
+        }
+    displayName: 'Check for pre-release packages in project files'
+
+  
