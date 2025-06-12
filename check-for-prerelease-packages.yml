@@ -8,7 +8,7 @@ steps:
             $packageRefs = $content | Select-String -Pattern '<PackageReference.*Version=".*-.*"'
             
             if ($packageRefs) {
-                Write-Error "Prerelease packages found in $($project.Name):"
+                Write-Error "Prerelease packages found in $($project.Name)"
                 try{
                     $packageRefs | ForEach-Object { Write-Error $_.Line.Trim() }
                 } catch {
