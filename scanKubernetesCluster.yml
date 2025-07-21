@@ -1,0 +1,56 @@
+parameters:
+  - name: kubernetesServiceEndpoint
+    type: string
+    displayName: 'Kubernetes service connection endpoint'
+  - name: scanArguments
+    type: string
+    default: 'scan -v --format html --output results.html'
+    displayName: 'Kubescape scan arguments'
+  - name: displayName
+    type: string
+    default: 'Scan Kubernetes Cluster'
+    displayName: 'Display name for the scan step'
+
+jobs:
+- job: scan  
+  displayName: Scan Kubernetes Cluster
+  pool: 
+    vmImage: 'ubuntu-latest'
+  steps:
+  - script: |
+      echo "Validating that we are running on a system with apt..."
+      if [ "$(uname -s)" != "Linux" ] || ! command -v apt >/dev/null 2>&1; then
+        echo "This pipeline must run on a Linux agent with apt package manager."
+        exit 1
+      fi
+      echo "Validation passed: apt is available."
+    displayName: 'Validate apt-based Linux Distro'
+
+  - task: Kubernetes@1
+    displayName: "Login Cluster"
+    inputs:
+      connectionType: "Kubernetes Service Connection"
+      kubernetesServiceEndpoint: ${{ parameters.kubernetesServiceEndpoint }}
+      command: login
+
+  - script: |
+      echo "Adding Kubescape APT repository..."
+      sudo add-apt-repository ppa:kubescape/kubescape
+      sudo apt update
+      sudo apt install kubescape
+      echo "Kubescape version:"
+      kubescape version
+    displayName: 'Install Kubescape using apt'
+
+  - script: |
+      echo "Running Kubescape scan with arguments: ${{ parameters.scanArguments }}"
+      kubescape ${{ parameters.scanArguments }}
+    displayName: ${{ parameters.displayName }}
+
+  - task: Kubernetes@1
+    displayName: "Logout Cluster"
+    condition: always()
+    inputs:
+      connectionType: "Kubernetes Service Connection"
+      kubernetesServiceEndpoint: ${{ parameters.kubernetesServiceEndpoint }}
+      command: logout
