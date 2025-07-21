@@ -50,8 +50,8 @@ jobs:
     displayName: 'Install Kubescape using apt'
 
   - script: |
-      echo "Running Kubescape scan with arguments: --output ${{ parameters.outputFormat }} --output-file ${{ parameters.outputFile }}"
-      kubescape scan --output ${{ parameters.outputFormat }} --output-file ${{ parameters.outputFile }}
+      echo "Running Kubescape scan with arguments: --format ${{ parameters.outputFormat }} --output ${{ parameters.outputFile }}"
+      kubescape scan --format ${{ parameters.outputFormat }} --output ${{ parameters.outputFile }}
     displayName: 'Run Kubescape scan'
 
   - publish: ${{ parameters.outputFile }}
