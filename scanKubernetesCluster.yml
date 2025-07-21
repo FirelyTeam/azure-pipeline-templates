@@ -2,14 +2,21 @@ parameters:
   - name: kubernetesServiceEndpoint
     type: string
     displayName: 'Kubernetes service connection endpoint'
-  - name: scanArguments
+  - name: outputFormat
     type: string
-    default: 'scan -v --format html --output results.html'
-    displayName: 'Kubescape scan arguments'
-  - name: displayName
+    default: 'html'
+    displayName: 'Output format for Kubescape scan'
+    values:
+      - html
+      - json
+  - name: outputFile
     type: string
-    default: 'Scan Kubernetes Cluster'
-    displayName: 'Display name for the scan step'
+    default: 'results.html'
+    displayName: 'Output file for Kubescape scan'
+  - name: artifactName
+    type: string
+    default: 'kubescape-results'
+    displayName: 'Name of the artifact to publish'
 
 jobs:
 - job: scan  
@@ -44,8 +51,12 @@ jobs:
 
   - script: |
       echo "Running Kubescape scan with arguments: ${{ parameters.scanArguments }}"
-      kubescape ${{ parameters.scanArguments }}
-    displayName: ${{ parameters.displayName }}
+      kubescape scan --output ${{ parameters.outputFormat }} --output-file ${{ parameters.outputFile }} ${{ parameters.scanArguments }}
+    displayName: 'Run Kubescape scan'
+
+  - publish: ${{ parameters.outputFile }}
+    artifact: ${{ parameters.artifactName }}
+    displayName: 'Publish Kubescape scan results'
 
   - task: Kubernetes@1
     displayName: "Logout Cluster"
