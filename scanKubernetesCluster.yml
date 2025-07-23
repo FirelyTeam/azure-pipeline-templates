@@ -1,0 +1,70 @@
+parameters:
+  - name: kubernetesServiceEndpoint
+    type: string
+    displayName: 'Kubernetes service connection endpoint'
+  - name: outputFormat
+    type: string
+    default: 'html'
+    displayName: 'Output format for Kubescape scan'
+    values:
+      - html
+      - json
+  - name: outputFile
+    type: string
+    default: 'results.html'
+    displayName: 'Output file for Kubescape scan'
+  - name: artifactName
+    type: string
+    default: 'kubescape-results'
+    displayName: 'Name of the artifact to publish'
+
+jobs:
+- job: scan
+  displayName: Scan Kubernetes Cluster
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+  - script: |
+      echo "Validating that we are running on a system with apt..."
+      if [ "$(uname -s)" != "Linux" ] || ! command -v apt >/dev/null 2>&1; then
+        echo "This pipeline must run on a Linux agent with apt package manager."
+        exit 1
+      fi
+      echo "Validation passed: apt is available."
+    displayName: 'Validate apt-based Linux Distro'
+
+  - task: Kubernetes@1
+    displayName: "Login Cluster"
+    inputs:
+      connectionType: "Kubernetes Service Connection"
+      kubernetesServiceEndpoint: ${{ parameters.kubernetesServiceEndpoint }}
+      command: login
+
+  - script: |
+      echo "Adding Kubescape APT repository..."
+      if ! sudo add-apt-repository -y ppa:kubescape/kubescape; then
+        echo "Failed to add Kubescape APT repository." >&2
+        exit 1
+      fi
+      sudo apt update
+      sudo apt install -y kubescape
+      echo "Kubescape version:"
+      kubescape version
+    displayName: 'Install Kubescape using apt'
+
+  - script: |
+      echo "Running Kubescape scan with arguments: --format ${{ parameters.outputFormat }} --output ${{ parameters.outputFile }}"
+      kubescape scan --format ${{ parameters.outputFormat }} --output ${{ parameters.outputFile }}
+    displayName: 'Run Kubescape scan'
+
+  - publish: ${{ parameters.outputFile }}
+    artifact: ${{ parameters.artifactName }}
+    displayName: 'Publish Kubescape scan results'
+
+  - task: Kubernetes@1
+    displayName: "Logout Cluster"
+    condition: always()
+    inputs:
+      connectionType: "Kubernetes Service Connection"
+      kubernetesServiceEndpoint: ${{ parameters.kubernetesServiceEndpoint }}
+      command: logout
