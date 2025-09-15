@@ -170,6 +170,7 @@ jobs:
     parameters:
       nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
       nuGetSources: ${{ parameters.nuGetSources }}
+      solutionFile: ${{ parameters.buildSolutionFile }}
       
   - script: dotnet build ${{ parameters.buildSolutionFile }} --configuration $(buildConfiguration) --no-restore /p:ContinuousIntegrationBuild=true
     displayName: 'dotnet build $(buildConfiguration)'

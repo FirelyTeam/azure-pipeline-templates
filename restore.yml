@@ -1,9 +1,15 @@
-# Repo: FirelyTeam/azure-pipeline-templates
-# File: restore.yml
 
 parameters:
-  nuGetServiceConnections: #service connetions to additional nuget feeds, not required 
-  nuGetSources:  #additional nuget sources, next to the default nuget.org feed, not required
+  - name: nuGetServiceConnections
+    type: string
+    displayName: 'Service connections to additional NuGet feeds (optional)'
+  - name: nuGetSources
+    type: string
+    displayName: 'Additional NuGet sources (optional)'
+  - name: solutionFile
+    type: string
+    default: ''
+    displayName: 'Solution file for dotnet restore (if not provided, all .sln files in the working directory are used)'
 
 steps:
   - ${{if parameters.nuGetServiceConnections}}:
@@ -11,5 +17,10 @@ steps:
       inputs:
         nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
 
-  - script: dotnet restore --source https://api.nuget.org/v3/index.json ${{ parameters.nuGetSources }}
+  - script: |
+      if [ -n "${{ parameters.solutionFile }}" ]; then
+        dotnet restore "${{ parameters.solutionFile }}" --source https://api.nuget.org/v3/index.json ${{ parameters.nuGetSources }}
+      else
+        dotnet restore --source https://api.nuget.org/v3/index.json ${{ parameters.nuGetSources }}
+      fi
     displayName: 'dotnet restore'
