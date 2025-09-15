@@ -166,6 +166,11 @@ jobs:
       Write-Host "##vso[task.setvariable variable=UseVersionSuffix]$useVersionSuffix"
     displayName: 'Determine version suffix use'
 
+  - powershell: |
+      Write-Host "buildSolutionFile: ${{ parameters.buildSolutionFile }}"
+    displayName: 'Debug buildSolutionFile parameter'
+  
+  
   - template: restore.yml
     parameters:
       nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
