@@ -18,7 +18,7 @@ steps:
         nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
 
   - powershell: |
-      if (${{ parameters.solutionFile }}) {
+      if ("${{ parameters.solutionFile }}") {
         dotnet restore "${{ parameters.solutionFile }}" --source https://api.nuget.org/v3/index.json ${{ parameters.nuGetSources }}
       }
       else {
