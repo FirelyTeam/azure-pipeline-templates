@@ -19,5 +19,5 @@ steps:
       inputs:
         nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
 
-  - script: dotnet restore "${{ parameters.solutionFile }}" --source https://api.nuget.org/v3/index.json ${{ parameters.nuGetSources }}
+  - script: dotnet restore ${{ parameters.solutionFile }} --source https://api.nuget.org/v3/index.json ${{ parameters.nuGetSources }}
     displayName: 'dotnet restore'
