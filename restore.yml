@@ -1,10 +1,10 @@
 
 parameters:
   - name: nuGetServiceConnections
-    type: string
+    type: object
     displayName: 'Service connections to additional NuGet feeds (optional)'
   - name: nuGetSources
-    type: string
+    type: object
     displayName: 'Additional NuGet sources (optional)'
   - name: solutionFile
     type: string
