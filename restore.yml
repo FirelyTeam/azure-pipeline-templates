@@ -19,10 +19,5 @@ steps:
 
   - powershell: |
       Write-Host "Current directory: $(PWD), provided solutionFile: '${{ parameters.solutionFile }}'"
-      if ("${{ parameters.solutionFile }}") {
-        dotnet restore "${{ parameters.solutionFile }}" --source https://api.nuget.org/v3/index.json ${{ parameters.nuGetSources }}
-      }
-      else {
-        dotnet restore --source https://api.nuget.org/v3/index.json ${{ parameters.nuGetSources }}
-      }
+      dotnet restore "${{ parameters.solutionFile }}" --source https://api.nuget.org/v3/index.json ${{ parameters.nuGetSources }}
     displayName: 'dotnet restore'
