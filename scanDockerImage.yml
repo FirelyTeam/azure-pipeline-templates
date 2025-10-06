@@ -31,15 +31,14 @@ parameters:
   type: string
   default: ''
   displayName: 'The Docker Hub registry connection (required for scanning the image with docker scout)'
-- name: vulnerabilityExceptionFile
-  type: string
-  default: ''
-  displayName: 'Location to store the VEX file (optional)'
 
 
 jobs:
 - job: scanDockerImage
   displayName: Scan Docker image for vulnerabilities
+  variable: 
+    - name: run_docker_scout
+      value: $[ ne('${{ parameters.dockerhubRegistryConnection }}', '') ]
   steps:
   - checkout: self
   - task: Docker@2
@@ -49,6 +48,7 @@ jobs:
       containerRegistry: ${{ parameters.dockerRegistryConnection }}
   - task: Bash@3
     displayName: 'Pull Docker image from private registry'
+    condition: and(succeeded(), eq(variables['run_docker_scout'], 'true'))
     inputs:
       targetType: inline
       script: |
@@ -56,14 +56,14 @@ jobs:
 
   - task: Docker@2
     displayName: Login to Docker Hub
-    condition: and(succeeded(), ne('${{ parameters.dockerhubRegistryConnection }}', ''))
+    condition: and(succeeded(), eq(variables['run_docker_scout'], 'true'))
     inputs:
       command: login
       containerRegistry: ${{ parameters.dockerhubRegistryConnection }}
 
   - task: CmdLine@2
     displayName: Run docker scout on image
-    condition: and(succeeded(), ne('${{ parameters.dockerhubRegistryConnection }}', ''))
+    condition: and(succeeded(), eq(variables['run_docker_scout'], 'true'))
     inputs:
       script: |
         # Install the Docker Scout CLI
