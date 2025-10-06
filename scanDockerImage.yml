@@ -48,7 +48,6 @@ jobs:
       containerRegistry: ${{ parameters.dockerRegistryConnection }}
   - task: Bash@3
     displayName: 'Pull Docker image from private registry'
-    condition: and(succeeded(), eq(variables['run_docker_scout'], 'true'))
     inputs:
       targetType: inline
       script: |
