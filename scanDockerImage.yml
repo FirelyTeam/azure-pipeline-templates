@@ -50,10 +50,9 @@ jobs:
     inputs:
       script: |
         # Install the Docker Scout CLI
-        echo "Installing Docker Scout CLI"
-        echo "DOCKER_HOME=${DOCKER_HOME}"
         echo "DOCKER_CONFIG=${DOCKER_CONFIG}"
-        curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
+        echo "Installing Docker Scout CLI"
+        curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s -- -b $DOCKER_CONFIG
         # Get a CVE report for the built image and fail the pipeline when critical or high CVEs are detected
         docker scout cves --help
         echo "docker scout cves ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }} --exit-code --only-severity critical,high,medium"
