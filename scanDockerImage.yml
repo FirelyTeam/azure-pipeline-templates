@@ -45,6 +45,15 @@ jobs:
       script: |
         docker pull ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}
 
+  - task: CmdLine@2
+    displayName: Run docker scout on image
+    inputs:
+      script: |
+        # Install the Docker Scout CLI
+        curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
+        # Get a CVE report for the built image and fail the pipeline when critical or high CVEs are detected
+        docker scout cves ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }} --exit-code --only-severity critical,high,medium
+
   - template: ./scanWithRetryTask.yml
     parameters:
       dockerExtraArguments: ""
