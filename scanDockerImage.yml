@@ -36,7 +36,7 @@ parameters:
 jobs:
 - job: scanDockerImage
   displayName: Scan Docker image for vulnerabilities
-  variables: 
+  variables:
     - name: run_docker_scout
       value: $[ ne('${{ parameters.dockerhubRegistryConnection }}', '') ]
   steps:
