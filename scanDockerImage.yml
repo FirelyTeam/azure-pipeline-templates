@@ -85,8 +85,6 @@ jobs:
         else
           echo "No vulnerabilities found in packages installed in the image"
         fi
-
-
   - template: ./scanWithRetryTask.yml
     parameters:
       dockerExtraArguments: ""
