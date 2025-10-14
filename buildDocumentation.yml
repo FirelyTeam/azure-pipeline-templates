@@ -1,7 +1,7 @@
 parameters:
   - name: pythonVersion
     type: string
-    default: '3.9'  # Updated to use available version
+    default: '3.9'
 
 jobs:
   - job: SphinxBuild
