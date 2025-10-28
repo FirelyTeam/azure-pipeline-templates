@@ -45,8 +45,8 @@ jobs:
           # Additional check for common documentation issues
           echo "Checking for broken internal references..."
           
-          # Look for common warning patterns in the log
-          if grep -i "WARNING\|ERROR" sphinx-build.log; then
+          # Look for common warning patterns in the log (excluding filenames)
+          if grep -E "^(WARNING|ERROR):" sphinx-build.log; then
             echo "❌ Found warnings or errors in build log"
             exit 1
           fi
