@@ -2,6 +2,12 @@ parameters:
   - name: pythonVersion
     type: string
     default: '3.9'
+  - name: requirementsFile
+    type: string
+    default: 'requirements.txt'
+  - name: sourceDirectory
+    type: string
+    default: '.'
 
 jobs:
   - job: SphinxBuild
@@ -16,7 +22,7 @@ jobs:
 
       - script: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r ${{ parameters.requirementsFile }}
         displayName: 'Install dependencies'
 
       - script: |
@@ -25,7 +31,7 @@ jobs:
           # -T: show full traceback on exception
           # --keep-going: continue building when warnings are encountered
           echo "Building documentation with Sphinx..."
-          sphinx-build -W -T --keep-going -b html . ./_build/html 2>&1 | tee sphinx-build.log
+          sphinx-build -W -T --keep-going -b html ${{ parameters.sourceDirectory }} ./_build/html 2>&1 | tee sphinx-build.log
           
           # Check exit code
           exit_code=$?
