@@ -19,6 +19,10 @@ parameters:
   type: 'string'
   default: ''
   displayName: 'The version of the Docker repository'
+- name: 'trivyIgnoretoOpenVexScript'
+  type: 'string'
+  default: ''
+  displayName: 'path to trivyignore-to-openvex.sh'  
 - name : trivyCacheAzureSubscription
   type: string
   default: ''
@@ -63,6 +67,21 @@ jobs:
     inputs:
       command: login
       containerRegistry: ${{ parameters.dockerhubRegistryConnection }}
+
+  - task: Bash@3
+    displayName: 'Convert trivyignore.txt to OpenVEX file'
+    condition: and(succeeded(), eq(variables['run_docker_scout'], 'true'))
+    inputs:
+      targetType: inline
+      script: |
+        echo "Generating VEX file from trivyignore.txt"
+        if [ ! -f "${{ parameters.trivyIgnoretoOpenVexScript}}" ]; then
+          echo "trivyignore-to-openvex.sh script not found"
+          exit 1
+        fi
+        chmod +x ./trivyignore-to-openvex.sh
+        ${{ parameters.trivyIgnoretoOpenVexScript}} ${{ parameters.trivyIgnoreFile }} vex.json "devops@fire.ly" "pkg:${{ parameters.dockerImageRepoName }}@${{ parameters.dockerImageRepoVersion }}"
+        echo "Generated vex.json"  
 
   - task: CmdLine@2
     displayName: Run docker scout on image
