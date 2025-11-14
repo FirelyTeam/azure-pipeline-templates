@@ -7,7 +7,7 @@ schedules:
   displayName: 'Daily at 4:00 AM (Mon-Fri)'
   branches:
     include: 
-    - master
+    - main
   always: true
 
 trigger: none
