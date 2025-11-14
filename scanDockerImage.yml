@@ -85,7 +85,6 @@ jobs:
         chmod +x ./trivyignore-to-openvex.sh
         ${{ parameters.trivyIgnoretoOpenVexScript}} ${{ parameters.trivyIgnoreFile }} vex.json "devops@fire.ly" "${{ variables['docker_image_package_url'] }}"
         echo "Generated vex.json"
-        pwd && ls -la
         cat vex.json  
 
   - task: CmdLine@2
