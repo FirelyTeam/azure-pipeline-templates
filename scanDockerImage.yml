@@ -45,6 +45,9 @@ jobs:
       value: $[ ne('${{ parameters.dockerhubRegistryConnection }}', '') ]
     - name: docker_image_full_name
       value: ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}
+    - name: docker_image_package_url
+      value: pkg:${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}@${{ parameters.dockerImageRepoVersion }}
+
   steps:
   - checkout: self
 
@@ -80,7 +83,7 @@ jobs:
           exit 1
         fi
         chmod +x ./trivyignore-to-openvex.sh
-        ${{ parameters.trivyIgnoretoOpenVexScript}} ${{ parameters.trivyIgnoreFile }} vex.json "devops@fire.ly" "pkg:${{ parameters.dockerImageRepoName }}@${{ parameters.dockerImageRepoVersion }}"
+        ${{ parameters.trivyIgnoretoOpenVexScript}} ${{ parameters.trivyIgnoreFile }} vex.json "devops@fire.ly" "${{ variables['docker_image_package_url'] }}"
         echo "Generated vex.json"
         pwd && ls -la
         cat vex.json  
