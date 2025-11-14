@@ -82,7 +82,7 @@ jobs:
         chmod +x ./trivyignore-to-openvex.sh
         ${{ parameters.trivyIgnoretoOpenVexScript}} ${{ parameters.trivyIgnoreFile }} vex.json "devops@fire.ly" "pkg:${{ parameters.dockerImageRepoName }}@${{ parameters.dockerImageRepoVersion }}"
         echo "Generated vex.json"
-        pwd
+        pwd && ls -la
         cat vex.json  
 
   - task: CmdLine@2
@@ -96,15 +96,14 @@ jobs:
         echo "Installing Docker Scout CLI to ${install_dir}"
         curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s -- -b ${install_dir}
         echo "Get a CVE report for the base image"
-        pwd
-        docker scout cves --only-base ${{ variables['docker_image_full_name'] }} --exit-code --only-severity critical,high,medium,low --vex-location vex.json
+        docker scout cves --vex-location vex.json --only-base ${{ variables['docker_image_full_name'] }} --exit-code --only-severity critical,high,medium,low 
         if [ $? -ne 0 ]; then
           echo "Vulnerabilities found in packages installed in the base image"
         else
           echo "No vulnerabilities found in packages installed in the base image"
         fi
         echo "Get a CVE report for the built image (without considering CVE from base image) "
-        docker scout cves --ignore-base ${{ variables['docker_image_full_name'] }} --exit-code --only-severity critical,high,medium,low --vex-location vex.json
+        docker scout cves --vex-location vex.json --ignore-base ${{ variables['docker_image_full_name'] }} --exit-code --only-severity critical,high,medium,low 
         if [ $? -ne 0 ]; then
           echo "Vulnerabilities found in packages installed in the image"
         else
