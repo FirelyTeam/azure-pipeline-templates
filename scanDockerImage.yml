@@ -73,12 +73,12 @@ jobs:
     inputs:
       targetType: inline
       script: |
-        param(
-            [string]$TrivyIgnoreFile = $env:trivyIgnoreFile,
-            [string]$OutputFile = "vex.json",
-            [string]$Author = "devops@fire.ly",
-            [string]$ProductPurl = $env:docker_image_package_url
-        )
+        param()
+
+        $TrivyIgnoreFile = "$(trivyIgnoreFile)"
+        $OutputFile      = "vex.json"
+        $Author          = "devops@fire.ly"
+        $ProductPurl     = "$(docker_image_package_url)"
 
         Write-Host "Converting trivyignore → OpenVEX"
         Write-Host "Input: $TrivyIgnoreFile"
