@@ -73,8 +73,6 @@ jobs:
     inputs:
       targetType: inline
       script: |
-        param()
-
         $TrivyIgnoreFile = "$(trivyIgnoreFile)"
         $OutputFile      = "vex.json"
         $Author          = "devops@fire.ly"
