@@ -73,7 +73,7 @@ jobs:
     inputs:
       targetType: inline
       script: |
-        $TrivyIgnoreFile = "$(trivyIgnoreFile)"
+        $TrivyIgnoreFile = "${{ parameters.trivyIgnoreFile }}"
         $OutputFile      = "vex.json"
         $Author          = "devops@fire.ly"
         $ProductPurl     = "$(docker_image_package_url)"
