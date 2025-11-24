@@ -37,7 +37,7 @@ steps:
     $targetVersion = "${{ parameters.packageVersion }}"
     
     Write-Host "Input Package version: $targetVersion"
-    if ( "targetVersion}" -eq "" ) 
+    if ( "$targetVersion" -eq "" ) 
     {
       Write-Host "No package version specified, keeping the existing version in the property file."
       Exit 0
@@ -55,8 +55,8 @@ steps:
                 Major = [int]$matches[1]
                 Minor = [int]$matches[2]
                 Patch = [int]$matches[3]
-                PreRelease = $matches[4] ?? ""
-                Build = $matches[5] ?? ""
+                PreRelease = if ($matches[4]) { $matches[4] } else { "" }
+                Build = if ($matches[5]) { $matches[5] } else { "" }
                 Original = $versionString
             }
         }
