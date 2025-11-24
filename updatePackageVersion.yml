@@ -33,20 +33,68 @@ steps:
     nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
 
 - powershell: |
-    Write-Host "Input Package version: [${{ parameters.packageVersion }}]"
-    if ( "${{ parameters.packageVersion }}" -eq "" ) 
+    $packageName = "${{ parameters.packageName }}"
+    $targetVersion = "${{ parameters.packageVersion }}"
+    
+    Write-Host "Input Package version: $targetVersion"
+    if ( "targetVersion}" -eq "" ) 
     {
       Write-Host "No package version specified, keeping the existing version in the property file."
       Exit 0
     }
 
-    Write-Host "Retrieve the latest version (including pre-release) of the package ${{ parameters.packageName }} matching the expression ${{ parameters.packageVersion }}"
-    $packageVersion = (dotnet package search ${{ parameters.packageName }} --prerelease --source https://nuget.pkg.github.com/FirelyTeam/index.json --format json --exact-match --verbosity minimal | ConvertFrom-Json).SearchResult[0].Packages | 
-      Where-Object { $_.Version -match "^${{ parameters.packageVersion }}" } | 
-      Sort-Object { 
-        $version = $_.Version -replace "[^0-9\.]", "" 
-        [System.Version]$version 
-      }, { $_.Version } -Descending | 
+    Write-Host "Retrieve the latest version (including pre-release) of the package $packageName matching the expression $targetVersion"
+    
+    # Function to parse semantic version for proper sorting
+    function Parse-SemanticVersion {
+        param($versionString)
+        
+        # Parse version parts (major.minor.patch-prerelease+build)
+        if ($versionString -match '^(\d+)\.(\d+)\.(\d+)(?:-([^+]+))?(?:\+(.+))?$') {
+            return @{
+                Major = [int]$matches[1]
+                Minor = [int]$matches[2]
+                Patch = [int]$matches[3]
+                PreRelease = $matches[4] ?? ""
+                Build = $matches[5] ?? ""
+                Original = $versionString
+            }
+        }
+        return $null
+    }
+
+    $allPackages = (dotnet package search $packageName --prerelease --source https://nuget.pkg.github.com/FirelyTeam/index.json --format json --exact-match --verbosity minimal | ConvertFrom-Json).SearchResult[0].Packages
+    Write-Host "Found $($allPackages.Count) total packages"
+    
+    # Filter packages matching the version pattern
+    $matchingPackages = $allPackages | Where-Object { $_.Version -match "^$targetVersion" }
+    Write-Host "Found $($matchingPackages.Count) packages matching pattern '^$targetVersion'"
+    
+    # Debug: Show all matching versions
+    Write-Host "Matching versions found:"
+    $matchingPackages | ForEach-Object { Write-Host "  $($_.Version)" }
+    
+    # Sort by semantic version properly (latest version regardless of stability)
+    $packageVersion = $matchingPackages | 
+      Sort-Object {
+        $parsed = Parse-SemanticVersion $_.Version
+        if ($parsed) {
+            # Create composite sort key based purely on version numbers
+            ($parsed.Major * 1000000000) + ($parsed.Minor * 1000000) + ($parsed.Patch * 1000)
+        } else {
+            # Fallback for non-semantic versions
+            0
+        }
+      }, { 
+        # Secondary sort by pre-release identifier for same base version (alphabetically descending)
+        $parsed = Parse-SemanticVersion $_.Version
+        if ($parsed -and $parsed.PreRelease) {
+            # For pre-release versions, sort by pre-release string in descending order
+            -$parsed.PreRelease.GetHashCode()
+        } else {
+            0
+        }
+      } -Descending |
       Select-Object -First 1 -ExpandProperty Version
 
     $xmlFilePath = "${{ parameters.propertyFilePath }}"
