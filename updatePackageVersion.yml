@@ -86,13 +86,21 @@ steps:
             0
         }
       }, { 
-        # Secondary sort by pre-release identifier for same base version (alphabetically descending)
+        # Secondary sort: stable versions (no pre-release) come first, then pre-release versions
+        $parsed = Parse-SemanticVersion $_.Version
+        if ($parsed) {
+            # Stable versions get 1 (higher), pre-release get 0 (lower) for descending sort
+            if ($parsed.PreRelease) { 0 } else { 1 }
+        } else {
+            1
+        }
+      }, {
+        # Tertiary sort: among pre-release versions, sort lexicographically (descending)
         $parsed = Parse-SemanticVersion $_.Version
         if ($parsed -and $parsed.PreRelease) {
-            # For pre-release versions, sort by pre-release string in descending order
-            -$parsed.PreRelease.GetHashCode()
+            $parsed.PreRelease
         } else {
-            0
+            ""
         }
       } -Descending |
       Select-Object -First 1 -ExpandProperty Version
