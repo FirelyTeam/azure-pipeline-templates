@@ -33,21 +33,55 @@ steps:
     nuGetServiceConnections: ${{ parameters.nuGetServiceConnections }}
 
 - powershell: |
-    Write-Host "Input Package version: [${{ parameters.packageVersion }}]"
-    if ( "${{ parameters.packageVersion }}" -eq "" ) 
+    $packageName = "${{ parameters.packageName }}"
+    $targetVersion = "${{ parameters.packageVersion }}"
+    
+    Write-Host "Input Package version: $targetVersion"
+    if ( [string]::IsNullOrEmpty($targetVersion) ) 
     {
       Write-Host "No package version specified, keeping the existing version in the property file."
       Exit 0
     }
 
-    Write-Host "Retrieve the latest version (including pre-release) of the package ${{ parameters.packageName }} matching the expression ${{ parameters.packageVersion }}"
-    $packageVersion = (dotnet package search ${{ parameters.packageName }} --prerelease --source https://nuget.pkg.github.com/FirelyTeam/index.json --format json --exact-match --verbosity minimal | ConvertFrom-Json).SearchResult[0].Packages | 
-      Where-Object { $_.Version -match "^${{ parameters.packageVersion }}" } | 
-      Sort-Object { 
-        $version = $_.Version -replace "[^0-9\.]", "" 
-        [System.Version]$version 
-      }, { $_.Version } -Descending | 
-      Select-Object -First 1 -ExpandProperty Version
+    Write-Host "Retrieve the latest version (including pre-release) of the package $packageName matching the expression $targetVersion"
+    
+    # Get all package versions from the feed
+    # Note: dotnet package search returns versions in ascending order (oldest to newest) according to SemVer 2.0
+    $searchResult = dotnet package search $packageName --prerelease --source https://nuget.pkg.github.com/FirelyTeam/index.json --format json --exact-match --verbosity minimal | ConvertFrom-Json
+    if (-not $searchResult.SearchResult -or $searchResult.SearchResult.Count -eq 0) {
+        Write-Host "No packages found for $packageName"
+        Exit 1
+    }
+    $allPackages = $searchResult.SearchResult[0].Packages
+    if (-not $allPackages) {
+        Write-Host "No packages found for $packageName"
+        Exit 1
+    }
+    Write-Host "Found $($allPackages.Count) total packages"
+    
+    # Filter packages matching the version pattern
+    $matchingPackages = $allPackages | Where-Object { $_.Version -match "^$targetVersion" }
+    Write-Host "Found $($matchingPackages.Count) packages matching pattern '^$targetVersion'"
+    
+    if (-not $matchingPackages -or $matchingPackages.Count -eq 0) {
+        Write-Host "No packages found matching pattern '^$targetVersion'"
+        Exit 1
+    }
+    
+    # Debug: Show all matching versions
+    Write-Host "Matching versions found:"
+    $matchingPackages | ForEach-Object { Write-Host "  $($_.Version)" }
+    
+    # Select the first version from the filtered list (GitHub feed appears to return newest first after filtering)
+    # This gives us the latest version according to SemVer 2.0, including pre-releases
+    $packageVersion = $matchingPackages | Select-Object -First 1 -ExpandProperty Version
+    
+    if (-not $packageVersion) {
+        Write-Host "Failed to select a package version"
+        Exit 1
+    }
+    
+    Write-Host "Selected version: $packageVersion"
 
     $xmlFilePath = "${{ parameters.propertyFilePath }}"
 
@@ -64,7 +98,7 @@ steps:
     $namespace = New-Object Xml.XmlNamespaceManager($xml.NameTable)
     $namespace.AddNamespace("msb", "http://schemas.microsoft.com/developer/msbuild/2003")
 
-    # Find the package propery element and update it
+    # Find the package property element and update it
     $packageVersionNode = $xml.SelectSingleNode("//msb:PropertyGroup/msb:${{ parameters.packageProperty }}", $namespace)
     if ($null -ne $packageVersionNode) {
         $packageVersionNode.InnerText = $packageVersion
