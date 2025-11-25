@@ -67,10 +67,6 @@ steps:
         Write-Host "No packages found matching pattern '^$targetVersion'"
         Exit 1
     }
-    if ($matchingPackages.Count -eq 0) {
-        Write-Host "No packages found matching pattern '^$targetVersion'"
-        Exit 1
-    }
     
     # Debug: Show all matching versions
     Write-Host "Matching versions found:"
