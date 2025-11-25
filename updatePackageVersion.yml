@@ -37,7 +37,7 @@ steps:
     $targetVersion = "${{ parameters.packageVersion }}"
     
     Write-Host "Input Package version: $targetVersion"
-    if ( "$targetVersion" -eq "" ) 
+    if ( [string]::IsNullOrEmpty($targetVersion) ) 
     {
       Write-Host "No package version specified, keeping the existing version in the property file."
       Exit 0
