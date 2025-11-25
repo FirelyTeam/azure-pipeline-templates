@@ -72,9 +72,9 @@ steps:
     Write-Host "Matching versions found:"
     $matchingPackages | ForEach-Object { Write-Host "  $($_.Version)" }
     
-    # Select the last version from the list (dotnet package search returns versions in ascending order)
+    # Select the first version from the filtered list (GitHub feed appears to return newest first after filtering)
     # This gives us the latest version according to SemVer 2.0, including pre-releases
-    $packageVersion = $matchingPackages | Select-Object -Last 1 -ExpandProperty Version
+    $packageVersion = $matchingPackages | Select-Object -First 1 -ExpandProperty Version
     
     if (-not $packageVersion) {
         Write-Host "Failed to select a package version"
