@@ -63,6 +63,10 @@ steps:
     $matchingPackages = $allPackages | Where-Object { $_.Version -match "^$targetVersion" }
     Write-Host "Found $($matchingPackages.Count) packages matching pattern '^$targetVersion'"
     
+    if (-not $matchingPackages -or $matchingPackages.Count -eq 0) {
+        Write-Host "No packages found matching pattern '^$targetVersion'"
+        Exit 1
+    }
     if ($matchingPackages.Count -eq 0) {
         Write-Host "No packages found matching pattern '^$targetVersion'"
         Exit 1
