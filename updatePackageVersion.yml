@@ -79,11 +79,11 @@ steps:
       Sort-Object {
         $parsed = Parse-SemanticVersion $_.Version
         if ($parsed) {
-            # Create composite sort key based purely on version numbers
-            ($parsed.Major * 1000000000) + ($parsed.Minor * 1000000) + ($parsed.Patch * 1000)
+            # Use System.Version for proper comparison without overflow concerns
+            [System.Version]"$($parsed.Major).$($parsed.Minor).$($parsed.Patch)"
         } else {
             # Fallback for non-semantic versions
-            0
+            [System.Version]"0.0.0"
         }
       }, { 
         # Secondary sort: stable versions (no pre-release) come first, then pre-release versions
