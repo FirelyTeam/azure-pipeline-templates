@@ -47,7 +47,16 @@ steps:
     
     # Get all package versions from the feed
     # Note: dotnet package search returns versions in ascending order (oldest to newest) according to SemVer 2.0
-    $allPackages = (dotnet package search $packageName --prerelease --source https://nuget.pkg.github.com/FirelyTeam/index.json --format json --exact-match --verbosity minimal | ConvertFrom-Json).SearchResult[0].Packages
+    $searchResult = dotnet package search $packageName --prerelease --source https://nuget.pkg.github.com/FirelyTeam/index.json --format json --exact-match --verbosity minimal | ConvertFrom-Json
+    if (-not $searchResult.SearchResult -or $searchResult.SearchResult.Count -eq 0) {
+        Write-Host "No packages found for $packageName"
+        Exit 1
+    }
+    $allPackages = $searchResult.SearchResult[0].Packages
+    if (-not $allPackages) {
+        Write-Host "No packages found for $packageName"
+        Exit 1
+    }
     Write-Host "Found $($allPackages.Count) total packages"
     
     # Filter packages matching the version pattern
