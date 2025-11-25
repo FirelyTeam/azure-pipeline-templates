@@ -75,33 +75,16 @@ steps:
     $matchingPackages | ForEach-Object { Write-Host "  $($_.Version)" }
     
     # Sort by semantic version properly (latest version regardless of stability)
-    $packageVersion = $matchingPackages | 
+    $packageVersion = $matchingPackages |
+      Select-Object *, @{Name='ParsedVersion'; Expression={Parse-SemanticVersion $_.Version}} |
       Sort-Object {
-        $parsed = Parse-SemanticVersion $_.Version
-        if ($parsed) {
-            # Use System.Version for proper comparison without overflow concerns
-            [System.Version]"$($parsed.Major).$($parsed.Minor).$($parsed.Patch)"
-        } else {
-            # Fallback for non-semantic versions
-            [System.Version]"0.0.0"
-        }
-      }, { 
-        # Secondary sort: stable versions (no pre-release) come first, then pre-release versions
-        $parsed = Parse-SemanticVersion $_.Version
-        if ($parsed) {
-            # Stable versions get 1 (higher), pre-release get 0 (lower) for descending sort
-            if ($parsed.PreRelease) { 0 } else { 1 }
-        } else {
-            1
-        }
+        if ($_.ParsedVersion) {
+            ($_.ParsedVersion.Major * 1000000000) + ($_.ParsedVersion.Minor * 1000000) + ($_.ParsedVersion.Patch * 1000)
+        } else { 0 }
       }, {
-        # Tertiary sort: among pre-release versions, sort lexicographically (descending)
-        $parsed = Parse-SemanticVersion $_.Version
-        if ($parsed -and $parsed.PreRelease) {
-            $parsed.PreRelease
-        } else {
-            ""
-        }
+        if ($_.ParsedVersion -and $_.ParsedVersion.PreRelease) { 0 } else { 1 }
+      }, {
+        if ($_.ParsedVersion -and $_.ParsedVersion.PreRelease) { $_.ParsedVersion.PreRelease } else { "" }
       } -Descending |
       Select-Object -First 1 -ExpandProperty Version
 
