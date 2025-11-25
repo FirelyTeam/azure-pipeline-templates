@@ -54,6 +54,11 @@ steps:
     $matchingPackages = $allPackages | Where-Object { $_.Version -match "^$targetVersion" }
     Write-Host "Found $($matchingPackages.Count) packages matching pattern '^$targetVersion'"
     
+    if ($matchingPackages.Count -eq 0) {
+        Write-Host "No packages found matching pattern '^$targetVersion'"
+        Exit 1
+    }
+    
     # Debug: Show all matching versions
     Write-Host "Matching versions found:"
     $matchingPackages | ForEach-Object { Write-Host "  $($_.Version)" }
@@ -61,6 +66,13 @@ steps:
     # Select the last version from the list (dotnet package search returns versions in ascending order)
     # This gives us the latest version according to SemVer 2.0, including pre-releases
     $packageVersion = $matchingPackages | Select-Object -Last 1 -ExpandProperty Version
+    
+    if (-not $packageVersion) {
+        Write-Host "Failed to select a package version"
+        Exit 1
+    }
+    
+    Write-Host "Selected version: $packageVersion"
 
     $xmlFilePath = "${{ parameters.propertyFilePath }}"
 
@@ -77,7 +89,7 @@ steps:
     $namespace = New-Object Xml.XmlNamespaceManager($xml.NameTable)
     $namespace.AddNamespace("msb", "http://schemas.microsoft.com/developer/msbuild/2003")
 
-    # Find the package propery element and update it
+    # Find the package property element and update it
     $packageVersionNode = $xml.SelectSingleNode("//msb:PropertyGroup/msb:${{ parameters.packageProperty }}", $namespace)
     if ($null -ne $packageVersionNode) {
         $packageVersionNode.InnerText = $packageVersion
