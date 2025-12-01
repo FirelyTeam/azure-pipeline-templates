@@ -82,17 +82,26 @@ jobs:
         Write-Host "Input: $TrivyIgnoreFile"
         Write-Host "Output: $OutputFile"
 
-        if (-not (Test-Path $TrivyIgnoreFile)) {
-            Write-Error "ERROR: $TrivyIgnoreFile not found!"
-            exit 1
-        }
-
-        # RFC3339 timestamp
+        # RFC3339 timestamp (prepared early so we can create an empty VEX if needed)
         $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:sszzz")
         $vexId = "https://openvex.dev/docs/public/vex-" + ([guid]::NewGuid().ToString().ToLower())
 
-        $statements = @()
-        $today = Get-Date
+        if (-not (Test-Path $TrivyIgnoreFile)) {
+          Write-Host "No trivy ignore file found at '$TrivyIgnoreFile'. Creating empty OpenVEX ($OutputFile) with no statements."
+          $document = @{
+            "@context" = "https://openvex.dev/ns/v0.2.0"
+            "@id" = $vexId
+            author = $Author
+            timestamp = $timestamp
+            version = 1
+            statements = @()
+          }
+          $document | ConvertTo-Json -Depth 10 | Out-File -Encoding utf8 -FilePath $OutputFile
+          Write-Host "Created empty OpenVEX file: $OutputFile"
+        }
+        else {
+          $statements = @()
+          $today = Get-Date
 
         Get-Content $TrivyIgnoreFile | ForEach-Object {
             $line = $_.Trim()
