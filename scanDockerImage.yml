@@ -103,7 +103,7 @@ jobs:
           $statements = @()
           $today = Get-Date
 
-        Get-Content $TrivyIgnoreFile | ForEach-Object {
+          Get-Content $TrivyIgnoreFile | ForEach-Object {
             $line = $_.Trim()
             if ($line -eq "" -or $line.StartsWith("#")) { return }
 
@@ -111,59 +111,60 @@ jobs:
 
             $Expiry = $null
             if ($line -match "exp:(\d{4}-\d{2}-\d{2})") {
-                $Expiry = $Matches[1]
+              $Expiry = $Matches[1]
             }
 
             if ($Expiry) {
-                $expiryDate = Get-Date $Expiry
+              $expiryDate = Get-Date $Expiry
 
-                if ($expiryDate -le $today) {
-                    $Status = "affected"
-                    $Justification = "no_known_fix"
-                    $Impact = "Ignore period expired on $Expiry"
-                }
-                else {
-                    $Status = "not_affected"
-                    $Justification = "no_known_fix"
-                    $Impact = "Ignored via .trivyignore migration (expires on $Expiry)"
-                }
-            }
-            else {
+              if ($expiryDate -le $today) {
+                $Status = "affected"
+                $Justification = "no_known_fix"
+                $Impact = "Ignore period expired on $Expiry"
+              }
+              else {
                 $Status = "not_affected"
                 $Justification = "no_known_fix"
-                $Impact = "Ignored via .trivyignore migration"
+                $Impact = "Ignored via .trivyignore migration (expires on $Expiry)"
+              }
+            }
+            else {
+              $Status = "not_affected"
+              $Justification = "no_known_fix"
+              $Impact = "Ignored via .trivyignore migration"
             }
 
             $stmtTs = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:sszzz")
 
             $stmt = @{
-                vulnerability = @{ name = $CVE }
-                timestamp = $stmtTs
-                products = @(@{ "@id" = $ProductPurl })
-                status = $Status
-                justification = $Justification
-                impact_statement = $Impact
+              vulnerability = @{ name = $CVE }
+              timestamp = $stmtTs
+              products = @(@{ "@id" = $ProductPurl })
+              status = $Status
+              justification = $Justification
+              impact_statement = $Impact
             }
 
             $statements += $stmt
-        }
+          }
 
-        $document = @{
+          $document = @{
             "@context" = "https://openvex.dev/ns/v0.2.0"
             "@id" = $vexId
             author = $Author
             timestamp = $timestamp
             version = 1
             statements = $statements
-        }
+          }
 
-        $document | ConvertTo-Json -Depth 10 | Out-File -Encoding utf8 -FilePath $OutputFile
+          $document | ConvertTo-Json -Depth 10 | Out-File -Encoding utf8 -FilePath $OutputFile
 
-        Write-Host "OpenVEX file created: $OutputFile"
-        Write-Host "Printing vex.json:"
-        Write-Host "----------------------------------------"
-        Get-Content $OutputFile | Write-Host
-        Write-Host "----------------------------------------"  
+          Write-Host "OpenVEX file created: $OutputFile"
+          Write-Host "Printing vex.json:"
+          Write-Host "----------------------------------------"
+          Get-Content $OutputFile | Write-Host
+          Write-Host "----------------------------------------"
+        }  
 
   - task: CmdLine@2
     displayName: Run docker scout on image
