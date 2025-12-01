@@ -108,7 +108,7 @@ jobs:
             if ($Expiry) {
                 $expiryDate = Get-Date $Expiry
 
-                if ($expiryDate -lt $today) {
+                if ($expiryDate -le $today) {
                     $Status = "affected"
                     $Justification = "no_known_fix"
                     $Impact = "Ignore period expired on $Expiry"
