@@ -82,7 +82,7 @@ jobs:
         Write-Host "Input: $TrivyIgnoreFile"
         Write-Host "Output: $OutputFile"
 
-        # RFC3339 timestamp (prepared early so we can create an empty VEX if needed)
+        # RFC3339 timestamp
         $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:sszzz")
         $vexId = "https://openvex.dev/docs/public/vex-" + ([guid]::NewGuid().ToString().ToLower())
 
