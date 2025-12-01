@@ -41,6 +41,9 @@ jobs:
       value: $[ ne('${{ parameters.dockerhubRegistryConnection }}', '') ]
     - name: docker_image_full_name
       value: ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}
+    - name: docker_image_package_url
+      value: pkg:docker/${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}@${{ parameters.dockerImageRepoVersion }}
+
   steps:
   - checkout: self
 
@@ -63,6 +66,105 @@ jobs:
     inputs:
       command: login
       containerRegistry: ${{ parameters.dockerhubRegistryConnection }}
+      
+  - task: PowerShell@2
+    displayName: "Convert trivyignore.txt to OpenVEX file"
+    condition: and(succeeded(), eq(variables['run_docker_scout'], 'true'))
+    inputs:
+      targetType: inline
+      script: |
+        $TrivyIgnoreFile = "${{ parameters.trivyIgnoreFile }}"
+        $OutputFile      = "vex.json"
+        $Author          = "devops@fire.ly"
+        $ProductPurl     = "$(docker_image_package_url)"
+
+        Write-Host "Converting trivyignore → OpenVEX"
+        Write-Host "Input: $TrivyIgnoreFile"
+        Write-Host "Output: $OutputFile"
+
+        # RFC3339 timestamp
+        $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:sszzz")
+        $vexId = "https://openvex.dev/docs/public/vex-" + ([guid]::NewGuid().ToString().ToLower())
+
+        if (-not (Test-Path $TrivyIgnoreFile)) {
+          Write-Host "No trivy ignore file found at '$TrivyIgnoreFile'. Creating empty OpenVEX ($OutputFile) with no statements."
+          $document = @{
+            "@context" = "https://openvex.dev/ns/v0.2.0"
+            "@id" = $vexId
+            author = $Author
+            timestamp = $timestamp
+            version = 1
+            statements = @()
+          }
+          $document | ConvertTo-Json -Depth 10 | Out-File -Encoding utf8 -FilePath $OutputFile
+          Write-Host "Created empty OpenVEX file: $OutputFile"
+        }
+        else {
+          $statements = @()
+          $today = Get-Date
+
+          Get-Content $TrivyIgnoreFile | ForEach-Object {
+            $line = $_.Trim()
+            if ($line -eq "" -or $line.StartsWith("#")) { return }
+
+            $CVE = $line.Split(" ")[0].Trim()
+
+            $Expiry = $null
+            if ($line -match "exp:(\d{4}-\d{2}-\d{2})") {
+              $Expiry = $Matches[1]
+            }
+
+            if ($Expiry) {
+              $expiryDate = Get-Date $Expiry
+
+              if ($expiryDate -le $today) {
+                $Status = "affected"
+                $Justification = "no_known_fix"
+                $Impact = "Ignore period expired on $Expiry"
+              }
+              else {
+                $Status = "not_affected"
+                $Justification = "no_known_fix"
+                $Impact = "Ignored via .trivyignore migration (expires on $Expiry)"
+              }
+            }
+            else {
+              $Status = "not_affected"
+              $Justification = "no_known_fix"
+              $Impact = "Ignored via .trivyignore migration"
+            }
+
+            $stmtTs = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:sszzz")
+
+            $stmt = @{
+              vulnerability = @{ name = $CVE }
+              timestamp = $stmtTs
+              products = @(@{ "@id" = $ProductPurl })
+              status = $Status
+              justification = $Justification
+              impact_statement = $Impact
+            }
+
+            $statements += $stmt
+          }
+
+          $document = @{
+            "@context" = "https://openvex.dev/ns/v0.2.0"
+            "@id" = $vexId
+            author = $Author
+            timestamp = $timestamp
+            version = 1
+            statements = $statements
+          }
+
+          $document | ConvertTo-Json -Depth 10 | Out-File -Encoding utf8 -FilePath $OutputFile
+
+          Write-Host "OpenVEX file created: $OutputFile"
+          Write-Host "Printing vex.json:"
+          Write-Host "----------------------------------------"
+          Get-Content $OutputFile | Write-Host
+          Write-Host "----------------------------------------"
+        }  
 
   - task: CmdLine@2
     displayName: Run docker scout on image
@@ -75,14 +177,14 @@ jobs:
         echo "Installing Docker Scout CLI to ${install_dir}"
         curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s -- -b ${install_dir}
         echo "Get a CVE report for the base image"
-        docker scout cves --only-base ${{ variables['docker_image_full_name'] }} --exit-code --only-severity critical,high,medium,low
+        docker scout cves --vex-location vex.json --only-base ${{ variables['docker_image_full_name'] }} --exit-code --only-severity critical,high,medium,low 
         if [ $? -ne 0 ]; then
           echo "Vulnerabilities found in packages installed in the base image"
         else
           echo "No vulnerabilities found in packages installed in the base image"
         fi
         echo "Get a CVE report for the built image (without considering CVE from base image) "
-        docker scout cves --ignore-base ${{ variables['docker_image_full_name'] }} --exit-code --only-severity critical,high,medium,low
+        docker scout cves --vex-location vex.json --ignore-base ${{ variables['docker_image_full_name'] }} --exit-code --only-severity critical,high,medium,low 
         if [ $? -ne 0 ]; then
           echo "Vulnerabilities found in packages installed in the image"
         else
