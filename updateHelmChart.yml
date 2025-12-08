@@ -4,7 +4,7 @@
 parameters:
   - name: helmRepoId
     type: string
-  - name: chartFilePath
+  - name: chartDirectory
     type: string
   - name: githubOrg
     type: string
@@ -34,9 +34,12 @@ jobs:
         # Variables
         $appVersion = "${{ parameters.appVersion }}"
         $repoPath = "$(Build.SourcesDirectory)"
-        $chartFilePath = "$repoPath/${{ parameters.chartFilePath }}"
+        $chartDirectory = "$repoPath/${{ parameters.chartDirectory }}"
+        $chartFilePath = "$chartDirectory/Chart.yaml"
+         if (-not (Test-Path -Path $chartFilePath)) {
+            throw "Chart.yaml not found at path: $chartFilePath"
+        }
         $branchName = "chore/update-appversion-$appVersion"
-        $sourceBranch = $branchName
         $targetBranch = "${{ parameters.prBaseBranch }}"
         $githubOrg = "${{ parameters.githubOrg }}"
         $repoId = "${{ parameters.helmRepoId }}"
@@ -48,7 +51,7 @@ jobs:
         Write-Host "Using repo path: $repoPath"
         git config user.name $(git_user)
         git config user.email $(git_emailaddress)
-        cd $repoPath/charts/firely-auth
+        cd $chartDirectory
         git checkout -b $branchName
         $chartText = Get-Content -Raw -Path $chartFilePath
 
@@ -79,8 +82,9 @@ jobs:
 
         git add $chartFilePath
         git commit -m "chore: update appVersion to $appVersion"
-        git remote set-url origin https://$(git_user):$(git_token)@github.com/FirelyTeam/Helm.Charts
-        git push origin $branchName      
+        git remote set-url origin https://$(git_user):$(git_token)@github.com/$(githubOrg)/$(repoId)
+        Write-Host "WARNING: Force-pushing branch $branchName to origin. This will overwrite any existing branch with the same name."
+        git push origin $branchName --force     
 
         # -----------------------------
         # Create Pull Request
@@ -102,9 +106,17 @@ jobs:
 
         Write-Host "Creating PR via: $url"
 
-        $response = Invoke-RestMethod -Uri $url -Headers $headers -Method POST -Body $body
-        $prNumber = $response.number
-        Write-Host "PR created: $($response.html_url)"
+        try {
+            $response = Invoke-RestMethod -Uri $url -Headers $headers -Method POST -Body $body
+            $prNumber = $response.number
+            Write-Host "PR created: $($response.html_url)"
+        } catch {
+            if ($_.Exception.Response.StatusCode -eq 422) {
+                Write-Host "PR may already exist for branch $branchName"
+                throw
+            }
+            throw
+        }
         # -----------------------------
         # Add reviewers
         # -----------------------------
