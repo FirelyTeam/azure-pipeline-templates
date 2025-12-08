@@ -26,121 +26,139 @@ jobs:
     vmImage: 'ubuntu-latest'
   steps:
   - checkout: helmCharts
+
+  # Prepare variables, parse reviewers
   - task: PowerShell@2
-    displayName: Update Chart.yaml and create PR
+    name: PrepVars
+    displayName: "Prepare variables"
     inputs:
       targetType: inline
       script: |
-        # Variables
-        $appVersion = "${{ parameters.appVersion }}"
-        $repoPath = "$(Build.SourcesDirectory)"
-        $chartDirectory = "$repoPath/${{ parameters.chartDirectory }}"
-        $chartFilePath = "$chartDirectory/Chart.yaml"
-         if (-not (Test-Path -Path $chartFilePath)) {
-            throw "Chart.yaml not found at path: $chartFilePath"
-        }
-        $branchName = "chore/update-appversion-$appVersion"
-        $targetBranch = "${{ parameters.prBaseBranch }}"
-        $githubOrg = "${{ parameters.githubOrg }}"
-        $repoId = "${{ parameters.helmRepoId }}"
-        $token = "$(git_token)"
+        $ErrorActionPreference = "Stop"
 
         $reviewersString = "${{ parameters.prReviewers }}"
         $reviewers = $reviewersString -split '\s*,\s*'
-        Write-Host "Reviewers: $reviewers"
-        Write-Host "Using repo path: $repoPath"
-        git config user.name $(git_user)
-        git config user.email $(git_emailaddress)
-        cd $chartDirectory
-        git checkout -b $branchName
-        $chartText = Get-Content -Raw -Path $chartFilePath
 
-        # Extract current chart version
-        if ($chartText -match 'version:\s*([0-9]+)\.([0-9]+)\.([0-9]+)') {
-        $curMajor = [int]$Matches[1]
-        $curMinor = [int]$Matches[2]
-        $curPatch = [int]$Matches[3]
-        } else {
-        throw "Could not parse current chart version from Chart.yaml"
+        Write-Host "##vso[task.setvariable variable=reviewers;isOutput=true]$($reviewers -join ',')"
+        Write-Host "Reviewers parsed: $($reviewers -join ',')"
+
+        $chartPath = "$(Build.SourcesDirectory)/${{ parameters.chartDirectory }}/Chart.yaml"
+        Write-Host "##vso[task.setvariable variable=chartFile]$chartPath"
+
+        if (-not (Test-Path $chartPath)) {
+            throw "Chart.yaml not found at $chartPath"
         }
 
-        $newMajor = $curMajor
-        $newMinor = $curMinor + 1
-        $newPatch = 0
-        $newChartVersion = "{0}.{1}.{2}" -f $newMajor, $newMinor, $newPatch
+  # Update Chart.yaml (version + appVersion)
+  - task: PowerShell@2
+    displayName: "Update Chart.yaml"
+    inputs:
+      targetType: inline
+      script: |
+        $chartFilePath = "$(chartFile)"
+        $appVersion = "${{ parameters.appVersion }}"
 
-        Write-Host "Current chart version: $curMajor.$curMinor.$curPatch"
-        Write-Host "New chart version: $newChartVersion"
+        $chartText = Get-Content -Raw -Path $chartFilePath
 
-        # Replace chart version and update existing appVersion
-        $chartText = $chartText -replace '(?m)^version:\s*.*$', "version: $newChartVersion"
-        # write appVersion with double quotes in Chart.yaml
-        $chartText = $chartText -replace '(?m)^appVersion:\s*.*$', ('appVersion: "{0}"' -f $appVersion)
+        if ($chartText -match 'version:\s*([0-9]+)\.([0-9]+)\.([0-9]+)') {
+            $newVersion = "{0}.{1}.{2}" -f $Matches[1], ([int]$Matches[2] + 1), 0
+        } else {
+            throw "Failed to parse version:"
+        }
 
-        # Write updated Chart.yaml
+        Write-Host "New chart version: $newVersion"
+
+        $chartText = $chartText -replace '(?m)^version:\s*.*$', "version: $newVersion"
+        $chartText = $chartText -replace '(?m)^appVersion:\s*.*$', "appVersion: `"$appVersion`""
+
         Set-Content -Path $chartFilePath -Value $chartText -Encoding UTF8
 
-        git add $chartFilePath
-        git commit -m "chore: update appVersion to $appVersion"
+  # Git commit and push
+  - task: PowerShell@2
+    displayName: "Commit and push changes"
+    inputs:
+      targetType: inline
+      script: |
+        $branch = "chore/update-appversion-${{ parameters.appVersion }}"
+        $repoId = "${{ parameters.helmRepoId }}"
+        $githubOrg = "${{ parameters.githubOrg }}"
 
-        # ----------------------------------------
-        # Secure GitHub authentication (no token in URL)
-        # ----------------------------------------
+        git config user.name "$(git_user)"
+        git config user.email "$(git_emailaddress)"
+
+        cd "$(Build.SourcesDirectory)/${{ parameters.chartDirectory }}"
+
+        git checkout -b $branch
+        git add Chart.yaml
+        git commit -m "chore: update appVersion to ${{ parameters.appVersion }}"
+
         git remote set-url origin https://github.com/$githubOrg/$repoId
         git config credential.helper store
 
         $cred = "https://$(git_user):$(git_token)@github.com"
-        Set-Content -Path "$env:HOME\.git-credentials" -Value $cred -Encoding ASCII
+        Set-Content -Path "$env:HOME/.git-credentials" -Value $cred -Encoding ASCII
 
-        Write-Host "WARNING: Force-pushing branch $branchName to origin. This will overwrite any existing branch with the same name."
-        git push origin $branchName --force     
+        git push origin $branch --force
+        Write-Host "##vso[task.setvariable variable=branchName]$branch"
 
-        # -----------------------------
-        # Create Pull Request
-        # -----------------------------
+
+  # Create the pull request
+  - task: PowerShell@2
+    name: CreatePR
+    displayName: "Create pull request"
+    inputs:
+      targetType: inline
+      script: |
+        $branch = "$(branchName)"
+        $base = "${{ parameters.prBaseBranch }}"
+        $org = "${{ parameters.githubOrg }}"
+        $repo = "${{ parameters.helmRepoId }}"
+        $token = "$(git_token)"
+
         $body = @{
-          head  = $branchName
-          base  = $targetBranch
-          title = "chore: update appVersion to $appVersion"
-          body  = "This PR was created automatically by Azure Pipeline."
+          head  = $branch
+          base  = $base
+          title = "chore: update appVersion to ${{ parameters.appVersion }}"
+          body  = "Automatically created by Azure Pipeline."
         } | ConvertTo-Json
 
         $headers = @{
           Authorization = "token $token"
           "User-Agent" = "AzurePipeline"
-          "Content-Type" = "application/json"
         }
 
-        $url = "https://api.github.com/repos/$githubOrg/$repoId/pulls"
+        $url = "https://api.github.com/repos/$org/$repo/pulls"
 
-        Write-Host "Creating PR via: $url"
+        $resp = Invoke-RestMethod -Uri $url -Headers $headers -Method POST -Body $body
+        Write-Host "PR created: $($resp.html_url)"
+        Write-Host "##vso[task.setvariable variable=prNumber]$($resp.number)"
 
-        try {
-            $response = Invoke-RestMethod -Uri $url -Headers $headers -Method POST -Body $body
-            $prNumber = $response.number
-            Write-Host "PR created: $($response.html_url)"
-        } catch {
-            if ($_.Exception.Response.StatusCode -eq 422) {
-                Write-Host "PR may already exist for branch $branchName"
-                throw
-            }
-            throw
+  # Step 6 — Add reviewers
+  - task: PowerShell@2
+    displayName: "Add reviewers"
+    inputs:
+      targetType: inline
+      script: |
+        $prNumber = "$(prNumber)"
+        $org = "${{ parameters.githubOrg }}"
+        $repo = "${{ parameters.helmRepoId }}"
+        $token = "$(git_token)"
+        $reviewers = "$(PrepVars.reviewers)" -split ','
+
+        if ($reviewers.Count -eq 0 -or [string]::IsNullOrWhiteSpace($reviewers[0])) {
+          Write-Host "No reviewers configured."
+          exit 0
         }
-        # -----------------------------
-        # Add reviewers
-        # -----------------------------
-        if ($reviewers.Count -gt 0) {
-            Write-Host "Adding reviewers: $reviewers"
 
-            $reviewersBody = @{
-                reviewers = $reviewers
-            } | ConvertTo-Json
+        $body = @{ reviewers = $reviewers } | ConvertTo-Json
 
-            $reviewerUrl = "https://api.github.com/repos/$githubOrg/$repoId/pulls/$prNumber/requested_reviewers"
+        $url = "https://api.github.com/repos/$org/$repo/pulls/$prNumber/requested_reviewers"
 
-            Invoke-RestMethod -Uri $reviewerUrl -Headers $headers -Method POST -Body $reviewersBody
-            Write-Host "Reviewers added."
-        } else {
-            Write-Host "No reviewers specified."
+        $headers = @{
+          Authorization = "token $token"
+          "User-Agent" = "AzurePipeline"
         }
+
+        Invoke-RestMethod -Uri $url -Headers $headers -Method POST -Body $body
+        Write-Host "Reviewers added: $reviewers"
 
