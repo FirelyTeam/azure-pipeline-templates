@@ -82,7 +82,16 @@ jobs:
 
         git add $chartFilePath
         git commit -m "chore: update appVersion to $appVersion"
-        git remote set-url origin https://$(git_user):$(git_token)@github.com/$(githubOrg)/$(repoId)
+
+        # ----------------------------------------
+        # Secure GitHub authentication (no token in URL)
+        # ----------------------------------------
+        git remote set-url origin https://github.com/$githubOrg/$repoId
+        git config credential.helper store
+
+        $cred = "https://$(git_user):$(git_token)@github.com"
+        Set-Content -Path "$env:USERPROFILE\.git-credentials" -Value $cred -Encoding ASCII
+
         Write-Host "WARNING: Force-pushing branch $branchName to origin. This will overwrite any existing branch with the same name."
         git push origin $branchName --force     
 
