@@ -19,18 +19,13 @@ parameters:
     type: string
     default: ''
 
-jobs:
-- job: UpdateHelmChart
-  displayName: Update Helm chart and create PR
-  pool:
-    vmImage: 'ubuntu-latest'
-  steps:
+steps:
   - checkout: helmCharts
 
   # Prepare variables, parse reviewers
   - task: PowerShell@2
     name: PrepVars
-    displayName: "Prepare variables"
+    displayName: "Test Chart Path and parse reviewers for Helm Chart PR"
     inputs:
       targetType: inline
       script: |
@@ -51,7 +46,7 @@ jobs:
 
   # Update Chart.yaml (version + appVersion)
   - task: PowerShell@2
-    displayName: "Update Chart.yaml"
+    displayName: "Update Helm Chart version and appVersion in Chart.yaml"
     inputs:
       targetType: inline
       script: |
@@ -105,7 +100,7 @@ jobs:
   # Create the pull request
   - task: PowerShell@2
     name: CreatePR
-    displayName: "Create pull request"
+    displayName: "Create pull request to update Helm Chart version"
     inputs:
       targetType: inline
       script: |
