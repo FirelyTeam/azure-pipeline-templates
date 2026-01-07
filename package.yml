@@ -89,7 +89,7 @@ steps:
         certificateValue: ${{ parameters.codeSignerCertificate }}
         certificatePasswordValue: ${{ parameters.codeSignerPassword }}
         packagePaths: $(Build.ArtifactStagingDirectory)\packages\*.nupkg
-  - ${{ else if parameters.trustedSigningAccountEndpoint }}: # Only sign if Trusted Signing endpoint is provided
+  - ${{ elseif parameters.trustedSigningAccountEndpoint }}: # Only sign if Trusted Signing endpoint is provided
     - template: codesign-nuget-package-using-trusted-signing.yml
       parameters:
         azureServiceConnection: ${{ parameters.azureServiceConnection }}
