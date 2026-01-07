@@ -65,7 +65,8 @@ steps:
           sign code trusted-signing "$($package.FullName)" `
             --trusted-signing-account "${{ parameters.trustedSigningAccountName }}" `
             --trusted-signing-certificate-profile "${{ parameters.certificateProfileName }}" `
-            --trusted-signing-endpoint "${{ parameters.trustedSigningAccountEndpoint }}"
+            --trusted-signing-endpoint "${{ parameters.trustedSigningAccountEndpoint }}" `
+            --azure-credential AzureCLI
           
           if ($LASTEXITCODE -ne 0) {
             Write-Error "Failed to sign package: $($package.Name)"
