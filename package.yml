@@ -83,7 +83,7 @@ steps:
     displayName: 'dotnet pack $(buildConfiguration)'
     condition: and(succeeded(), eq(variables.UseVersionSuffix, 'false'))
 
-  - ${{ if parameters.certificateValue }}: # Only sign if a code signing certificate is provided
+  - ${{ if parameters.codeSignerCertificate }}: # Only sign if a code signing certificate is provided
     - template: codesign-nuget-packages.yml
       parameters:
         certificateValue: ${{ parameters.codeSignerCertificate }}
