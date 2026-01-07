@@ -1,0 +1,63 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: codesign-nuget-packages.yml
+
+# README:
+# - Install the Trusted Signing Azure DevOps extension from Visual Studio Marketplace
+#   https://marketplace.visualstudio.com/items?itemName=VisualStudioClient.TrustedSigning
+# - Create an Azure service connection with OIDC/Federated Credentials
+# - Configure Azure Trusted Signing account and certificate profile
+# - Assign 'Trusted Signing Certificate Profile Signer' role to your service principal
+#
+# See for more information on Trusted Signing:
+#    https://learn.microsoft.com/en-us/azure/trusted-signing/how-to-signing-integrations
+
+
+parameters:
+- name: azureServiceConnection
+  type: string
+  displayName: 'Azure service connection for authentication'
+  default: ''
+- name: trustedSigningAccountEndpoint
+  type: string
+  displayName: 'Azure Trusted Signing account endpoint URL (e.g., https://eus.codesigning.azure.net)'
+  default: ''
+- name: trustedSigningAccountName
+  type: string
+  displayName: 'Trusted Signing account name'
+  default: ''
+- name: certificateProfileName
+  type: string
+  displayName: 'Certificate profile name in Trusted Signing'
+  default: ''
+- name: packagePaths
+  type: string
+  displayName: 'The path to the NuGet packages to sign. Wildcards can be used, like **/*.nupkg'
+  default: ''
+  
+steps:
+- ${{ if parameters.trustedSigningAccountEndpoint }}: # Only sign if Trusted Signing endpoint is provided
+  - task: AzureCLI@2
+    displayName: 'Authenticate with Azure'
+    inputs:
+      azureSubscription: ${{ parameters.azureServiceConnection }}
+      scriptType: 'pscore'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        Write-Host "Authenticated via service connection"
+      addSpnToEnvironment: true
+
+  - task: TrustedSigning@0
+    displayName: 'Sign NuGet packages with Trusted Signing'
+    inputs:
+      Endpoint: ${{ parameters.trustedSigningAccountEndpoint }}
+      TrustedSigningAccountName: ${{ parameters.trustedSigningAccountName }}
+      CertificateProfileName: ${{ parameters.certificateProfileName }}
+      Files: ${{ parameters.packagePaths }}
+      FileDigest: SHA256
+      TimestampRfc3161: 'http://timestamp.acs.microsoft.com'
+      TimestampDigest: SHA256
+
+- ${{ else }}:
+  - powershell: |
+      Write-Host "No Trusted Signing endpoint provided, skipping signing of packages"
+    displayName: 'No Trusted Signing endpoint provided'
