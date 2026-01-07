@@ -62,11 +62,17 @@ steps:
         foreach ($package in $packages) {
           Write-Host "`nSigning package: $($package.Name)"
           
-          sign code trusted-signing "$($package.FullName)" `
-            --trusted-signing-account "${{ parameters.trustedSigningAccountName }}" `
-            --trusted-signing-certificate-profile "${{ parameters.certificateProfileName }}" `
-            --trusted-signing-endpoint "${{ parameters.trustedSigningAccountEndpoint }}" `
-            --azure-credential AzureCLI
+         $signArgs = @(
+              'code',
+              'trusted-signing',
+              $package.FullName,
+              '--trusted-signing-account', "${{ parameters.trustedSigningAccountName }}",
+              '--trusted-signing-certificate-profile', "${{ parameters.certificateProfileName }}",
+              '--trusted-signing-endpoint', "${{ parameters.trustedSigningAccountEndpoint }}",
+              '--azure-credential', 'AzureCLI'
+            )
+            
+            & sign @signArgs
           
           if ($LASTEXITCODE -ne 0) {
             Write-Error "Failed to sign package: $($package.Name)"
