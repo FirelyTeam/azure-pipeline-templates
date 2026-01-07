@@ -1,5 +1,5 @@
 # Repo: FirelyTeam/azure-pipeline-templates
-# File: codesign-nuget-packages.yml
+# File: codesign-nuget-package-using-trusted-signing.yml
 
 # README:
 # - Install the Trusted Signing Azure DevOps extension from Visual Studio Marketplace
