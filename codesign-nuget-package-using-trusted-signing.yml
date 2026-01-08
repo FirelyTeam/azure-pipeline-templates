@@ -47,6 +47,11 @@ steps:
         Write-Host "Installing dotnet sign tool..."
         dotnet tool install --global sign --prerelease
         
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "Failed to install dotnet sign tool"
+          exit 1
+        }
+        
         # Get list of packages to sign
         $packages = Get-ChildItem -Path "${{ parameters.packagePaths }}" -File
         
