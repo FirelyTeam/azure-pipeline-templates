@@ -2,8 +2,7 @@
 # File: codesign-nuget-package-using-trusted-signing.yml
 
 # README:
-# - Install the Trusted Signing Azure DevOps extension from Visual Studio Marketplace
-#   https://marketplace.visualstudio.com/items?itemName=VisualStudioClient.TrustedSigning
+# - Ensure Azure CLI and .NET SDK are available on the build agent
 # - Create an Azure service connection with OIDC/Federated Credentials
 # - Configure Azure Trusted Signing account and certificate profile
 # - Assign 'Trusted Signing Certificate Profile Signer' role to your service principal
