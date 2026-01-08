@@ -44,7 +44,7 @@ steps:
       inlineScript: |
         # Install dotnet sign tool
         Write-Host "Installing dotnet sign tool..."
-        dotnet tool install --global sign --prerelease
+        dotnet tool install --global sign --version 0.9.1-beta.25379.1
         
         if ($LASTEXITCODE -ne 0) {
           Write-Error "Failed to install dotnet sign tool"
