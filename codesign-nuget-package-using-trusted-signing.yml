@@ -44,7 +44,7 @@ steps:
       inlineScript: |
         # Install dotnet sign tool
         Write-Host "Installing dotnet sign tool..."
-        dotnet tool install --global sign --prerelease
+        dotnet tool install --global sign --version 0.9.1-beta.25379.1
         
         if ($LASTEXITCODE -ne 0) {
           Write-Error "Failed to install dotnet sign tool"
@@ -88,7 +88,45 @@ steps:
         
         Write-Host "`nAll packages signed successfully!"
       addSpnToEnvironment: true
+  - task: PowerShell@2
+    displayName: 'Extract certificate from nuget package'
+    inputs:
+      targetType: 'inline'
+      script: |
+        # Install Certificate Extractor tool
+        Write-Host "Installing Knapcode.CertificateExtractor tool..."
+        dotnet tool install --global Knapcode.CertificateExtractor --version 0.1.1
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "Failed to install Knapcode.CertificateExtractor tool"
+          exit 1
+        }
+        # Get list of packages to extract certificates from
+        $packages = Get-ChildItem -Path "${{ parameters.packagePaths }}" -File
+        
+        if ($packages.Count -eq 0) {
+          Write-Error "No NuGet packages found at path: ${{ parameters.packagePaths }}"
+          exit 1
+        }
+        Write-Host "Extracting certificates from first packages:"
+        foreach ($package in $packages) {
+          Write-Host "`nExtracting certificate from package: $($package.Name)"
+          
+          nuget-cert-extractor --file $package.FullName --output "$(Build.ArtifactStagingDirectory)/certificates" --code-signing --author --leaf
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Failed to extract certificate from package: $($package.Name)"
+            exit 1
+          }
+          
+          Write-Host "Successfully extracted certificate from: $($package.Name)"
+        }
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Certificate Artifact'
+    inputs:
+      pathtoPublish: '$(Build.artifactStagingDirectory)/certificates'
+      artifactName: Certificates
 
+        
 - ${{ else }}:
   - powershell: |
       Write-Host "No Trusted Signing endpoint provided, skipping signing of packages"
