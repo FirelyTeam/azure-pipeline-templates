@@ -1,0 +1,95 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: codesign-nuget-package-using-trusted-signing.yml
+
+# README:
+# - Ensure Azure CLI and .NET SDK are available on the build agent
+# - Create an Azure service connection with OIDC/Federated Credentials
+# - Configure Azure Trusted Signing account and certificate profile
+# - Assign 'Trusted Signing Certificate Profile Signer' role to your service principal
+#
+# See for more information on Trusted Signing:
+#    https://learn.microsoft.com/en-us/azure/trusted-signing/how-to-signing-integrations
+
+
+parameters:
+- name: azureServiceConnection
+  type: string
+  displayName: 'Azure service connection for authentication'
+  default: ''
+- name: trustedSigningAccountEndpoint
+  type: string
+  displayName: 'Azure Trusted Signing account endpoint URL (e.g., https://eus.codesigning.azure.net)'
+  default: ''
+- name: trustedSigningAccountName
+  type: string
+  displayName: 'Trusted Signing account name'
+  default: ''
+- name: certificateProfileName
+  type: string
+  displayName: 'Certificate profile name in Trusted Signing'
+  default: ''
+- name: packagePaths
+  type: string
+  displayName: 'The path to the NuGet packages to sign. Wildcards can be used, like **/*.nupkg'
+  default: ''
+  
+steps:
+- ${{ if parameters.trustedSigningAccountEndpoint }}: # Only sign if Trusted Signing endpoint is provided
+  - task: AzureCLI@2
+    displayName: 'Sign NuGet packages with Trusted Signing'
+    inputs:
+      azureSubscription: ${{ parameters.azureServiceConnection }}
+      scriptType: 'pscore'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        # Install dotnet sign tool
+        Write-Host "Installing dotnet sign tool..."
+        dotnet tool install --global sign --prerelease
+        
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "Failed to install dotnet sign tool"
+          exit 1
+        }
+        
+        # Get list of packages to sign
+        $packages = Get-ChildItem -Path "${{ parameters.packagePaths }}" -File
+        
+        if ($packages.Count -eq 0) {
+          Write-Error "No NuGet packages found at path: ${{ parameters.packagePaths }}"
+          exit 1
+        }
+        
+        Write-Host "Found $($packages.Count) package(s) to sign:"
+        $packages | ForEach-Object { Write-Host "  $($_.FullName)" }
+        
+        # Sign each package
+        foreach ($package in $packages) {
+          Write-Host "`nSigning package: $($package.Name)"
+          
+         $signArgs = @(
+              'code',
+              'trusted-signing',
+              $package.FullName,
+              '--trusted-signing-account', "${{ parameters.trustedSigningAccountName }}",
+              '--trusted-signing-certificate-profile', "${{ parameters.certificateProfileName }}",
+              '--trusted-signing-endpoint', "${{ parameters.trustedSigningAccountEndpoint }}",
+              '--azure-credential-type', 'azure-cli'
+            )
+            
+            & sign @signArgs
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Failed to sign package: $($package.Name)"
+            exit 1
+          }
+          
+          Write-Host "Successfully signed: $($package.Name)"
+        }
+        
+        Write-Host "`nAll packages signed successfully!"
+      addSpnToEnvironment: true
+
+- ${{ else }}:
+  - powershell: |
+      Write-Host "No Trusted Signing endpoint provided, skipping signing of packages"
+    displayName: 'No Trusted Signing endpoint provided'

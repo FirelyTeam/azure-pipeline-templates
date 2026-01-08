@@ -24,6 +24,22 @@ parameters:
   type: string
   default: ''
   displayName: 'Solution file to package. If empty, the default solution file in the working directory will be used'
+- name: certificateProfileName
+  type: string
+  default: ''
+  displayName: 'Certificate profile name in Trusted Signing'
+- name: trustedSigningAccountEndpoint
+  type: string
+  default: ''
+  displayName: 'Azure Trusted Signing account endpoint URL (e.g., https://eus.codesigning.azure.net)'
+- name: trustedSigningAccountName
+  type: string
+  default: ''
+  displayName: 'Trusted Signing account name'
+- name: azureServiceConnection
+  type: string
+  default: ''
+  displayName: 'Azure service connection for signing with Trusted Signing'
 
 steps:
   - powershell: |
@@ -67,12 +83,20 @@ steps:
     displayName: 'dotnet pack $(buildConfiguration)'
     condition: and(succeeded(), eq(variables.UseVersionSuffix, 'false'))
 
-  - template: codesign-nuget-packages.yml
-    parameters:
-      certificateValue: ${{ parameters.codeSignerCertificate }}
-      certificatePasswordValue: ${{ parameters.codeSignerPassword }}
-      packagePaths: $(Build.ArtifactStagingDirectory)\packages\*.nupkg
-
+  - ${{ if parameters.codeSignerCertificate }}: # Only sign if a code signing certificate is provided
+    - template: codesign-nuget-packages.yml
+      parameters:
+        certificateValue: ${{ parameters.codeSignerCertificate }}
+        certificatePasswordValue: ${{ parameters.codeSignerPassword }}
+        packagePaths: $(Build.ArtifactStagingDirectory)\packages\*.nupkg
+  - ${{ elseif parameters.trustedSigningAccountEndpoint }}: # Only sign if Trusted Signing endpoint is provided
+    - template: codesign-nuget-package-using-trusted-signing.yml
+      parameters:
+        azureServiceConnection: ${{ parameters.azureServiceConnection }}
+        trustedSigningAccountEndpoint: ${{ parameters.trustedSigningAccountEndpoint }}
+        trustedSigningAccountName: ${{ parameters.trustedSigningAccountName }}
+        certificateProfileName: ${{ parameters.certificateProfileName }}
+        packagePaths: $(Build.ArtifactStagingDirectory)\packages\*.nupkg
   - task: PublishBuildArtifacts@1
     displayName: 'Publish Artifact'
     inputs:

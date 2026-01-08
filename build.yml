@@ -86,6 +86,22 @@ parameters:
   type: string
   default: ''
   displayName: 'Password for the code signing certificate'
+- name: certificateProfileName
+  type: string
+  default: ''
+  displayName: 'Certificate profile name in Trusted Signing'
+- name: trustedSigningAccountEndpoint
+  type: string
+  default: ''
+  displayName: 'Azure Trusted Signing account endpoint URL (e.g., https://eus.codesigning.azure.net)'
+- name: trustedSigningAccountName
+  type: string
+  default: ''
+  displayName: 'Trusted Signing account name'
+- name: azureServiceConnectionForSigning
+  type: string
+  default: ''
+  displayName: 'Azure service connection for signing with Trusted Signing'
 - name: buildSolutionFile
   type: string
   default: ''
@@ -248,6 +264,10 @@ jobs:
         codeSignerCertificate: ${{ parameters.codeSignerCertificate }}
         codeSignerPassword: ${{ parameters.codeSignerPassword }}
         packageSolutionFile: ${{ parameters.packageSolutionFile }}
+        certificateProfileName: ${{ parameters.certificateProfileName }}
+        trustedSigningAccountEndpoint: ${{ parameters.trustedSigningAccountEndpoint }}
+        trustedSigningAccountName: ${{ parameters.trustedSigningAccountName }}
+        azureServiceConnection: ${{ parameters.azureServiceConnectionForSigning }}
   
   - ${{ if parameters.publishArtifacts }}:
     - template: publish.yml
