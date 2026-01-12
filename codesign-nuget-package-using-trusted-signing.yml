@@ -35,6 +35,12 @@ parameters:
   
 steps:
 - ${{ if parameters.trustedSigningAccountEndpoint }}: # Only sign if Trusted Signing endpoint is provided
+  - task: UseDotNet@2
+    displayName: 'Install .NET 8 runtime for signing'
+    inputs:
+      packageType: runtime
+      version: 8.x
+      includePreviewVersions: false
   - task: AzureCLI@2
     displayName: 'Sign NuGet packages with Trusted Signing'
     inputs:
