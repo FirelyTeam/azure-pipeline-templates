@@ -35,8 +35,18 @@ parameters:
   type: string
   default: 'Execute scan with retries'
   displayName: 'The display name of the task'
+- name: dockerhubRegistryConnection
+  type: string
+  default: ''
+  displayName: 'The Docker Hub registry connection (for authenticated pulls to avoid rate limits)'
 
 steps:
+- ${{ if ne(parameters.dockerhubRegistryConnection, '') }}:
+  - task: Docker@2
+    displayName: 'Docker Hub login (for pull rate limits)'
+    inputs:
+      containerRegistry: ${{ parameters.dockerhubRegistryConnection }}
+      command: "login"
 - ${{ if ne(parameters.trivyCacheAzureSubscription, '') }}:
   - task: AzureCLI@2
     displayName: 'Retrieve Trivy cache'

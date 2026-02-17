@@ -200,6 +200,7 @@ jobs:
       trivyCacheAzureSubscription: ${{ parameters.trivyCacheAzureSubscription }}
       trivyCacheStorageAccount: ${{ parameters.trivyCacheStorageAccount }}
       localTrivyCachePath: $(Agent.TempDirectory)/trivy-cache
+      dockerhubRegistryConnection: ${{ parameters.dockerhubRegistryConnection }}
 
 #  The Trivy task does not work yet.
 #    - task: trivy@1
