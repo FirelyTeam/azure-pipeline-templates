@@ -29,6 +29,10 @@ parameters:
 - name: imageRepositoryName
   type: string
   displayName: 'The name of the Docker Image Repository'
+- name: dockerhubRegistryConnection
+  type: string
+  default: ''
+  displayName: 'The Docker Hub registry connection (for authenticated pulls to avoid rate limits)'
 
 jobs:
 - job: createDockerImage
@@ -53,6 +57,12 @@ jobs:
     inputs:
       containerRegistry: ${{ parameters.containerRegistry }}
       command: "login"
+  - ${{ if ne(parameters.dockerhubRegistryConnection, '') }}:
+    - task: Docker@2
+      displayName: 'Docker Hub login (for pull rate limits)'
+      inputs:
+        containerRegistry: ${{ parameters.dockerhubRegistryConnection }}
+        command: "login"
   - bash: |
       # jump to the target directory where the published code is extracted if artifact is used, otherwise use the default repository root folder.
       
