@@ -57,41 +57,41 @@ steps:
           exit 1
         }
         
-        # Get list of packages to sign
-        $packages = Get-ChildItem -Path "${{ parameters.packagePaths }}" -File
-        
+        # Resolve the base directory and glob pattern from the package path
+        $packagePath = "${{ parameters.packagePaths }}"
+        $baseDir = Split-Path -Parent $packagePath
+        $globPattern = Split-Path -Leaf $packagePath
+
+        # Verify packages exist
+        $packages = Get-ChildItem -Path $packagePath -File
         if ($packages.Count -eq 0) {
-          Write-Error "No NuGet packages found at path: ${{ parameters.packagePaths }}"
+          Write-Error "No NuGet packages found at path: $packagePath"
           exit 1
         }
-        
+
         Write-Host "Found $($packages.Count) package(s) to sign:"
         $packages | ForEach-Object { Write-Host "  $($_.FullName)" }
-        
-        # Sign each package
-        foreach ($package in $packages) {
-          Write-Host "`nSigning package: $($package.Name)"
-          
-         $signArgs = @(
-              'code',
-              'trusted-signing',
-              $package.FullName,
-              '--trusted-signing-account', "${{ parameters.trustedSigningAccountName }}",
-              '--trusted-signing-certificate-profile', "${{ parameters.certificateProfileName }}",
-              '--trusted-signing-endpoint', "${{ parameters.trustedSigningAccountEndpoint }}",
-              '--azure-credential-type', 'azure-cli'
-            )
-            
-            & sign @signArgs
-          
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "Failed to sign package: $($package.Name)"
-            exit 1
-          }
-          
-          Write-Host "Successfully signed: $($package.Name)"
+
+        # Sign all packages in a single invocation
+        $signArgs = @(
+          'code',
+          'trusted-signing',
+          $globPattern,
+          '--base-directory', $baseDir,
+          '--trusted-signing-account', "${{ parameters.trustedSigningAccountName }}",
+          '--trusted-signing-certificate-profile', "${{ parameters.certificateProfileName }}",
+          '--trusted-signing-endpoint', "${{ parameters.trustedSigningAccountEndpoint }}",
+          '--azure-credential-type', 'azure-cli',
+          '--recurse-containers', 'false'
+        )
+
+        & sign @signArgs
+
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "Failed to sign packages"
+          exit 1
         }
-        
+
         Write-Host "`nAll packages signed successfully!"
       addSpnToEnvironment: true
   - task: PowerShell@2
@@ -106,26 +106,23 @@ steps:
           Write-Error "Failed to install Knapcode.CertificateExtractor tool"
           exit 1
         }
-        # Get list of packages to extract certificates from
-        $packages = Get-ChildItem -Path "${{ parameters.packagePaths }}" -File
-        
-        if ($packages.Count -eq 0) {
+        # Extract certificate from the first package (certificate is the same across all packages)
+        $package = Get-ChildItem -Path "${{ parameters.packagePaths }}" -File | Select-Object -First 1
+
+        if (-not $package) {
           Write-Error "No NuGet packages found at path: ${{ parameters.packagePaths }}"
           exit 1
         }
-        Write-Host "Extracting certificates from first packages:"
-        foreach ($package in $packages) {
-          Write-Host "`nExtracting certificate from package: $($package.Name)"
-          
-          nuget-cert-extractor --file $package.FullName --output "$(Build.ArtifactStagingDirectory)/certificates" --code-signing --author --leaf
-          
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "Failed to extract certificate from package: $($package.Name)"
-            exit 1
-          }
-          
-          Write-Host "Successfully extracted certificate from: $($package.Name)"
+
+        Write-Host "Extracting certificate from package: $($package.Name)"
+        nuget-cert-extractor --file $package.FullName --output "$(Build.ArtifactStagingDirectory)/certificates" --code-signing --author --leaf
+
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "Failed to extract certificate from package: $($package.Name)"
+          exit 1
         }
+
+        Write-Host "Successfully extracted certificate from: $($package.Name)"
   - task: PublishBuildArtifacts@1
     displayName: 'Publish Certificate Artifact'
     inputs:
