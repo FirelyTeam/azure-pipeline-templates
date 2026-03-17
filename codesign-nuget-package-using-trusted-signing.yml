@@ -58,9 +58,22 @@ steps:
         }
         
         # Resolve the base directory and glob pattern from the package path
+        # Split at the first wildcard segment so that paths like **/*.nupkg work correctly
         $packagePath = "${{ parameters.packagePaths }}"
-        $baseDir = Split-Path -Parent $packagePath
-        $globPattern = Split-Path -Leaf $packagePath
+        $parts = $packagePath -split '[\\/]'
+        $baseParts = @()
+        $globParts = @()
+        $foundWildcard = $false
+        foreach ($part in $parts) {
+          if (-not $foundWildcard -and $part -notmatch '\*|\?') {
+            $baseParts += $part
+          } else {
+            $foundWildcard = $true
+            $globParts += $part
+          }
+        }
+        $baseDir = if ($baseParts.Count -gt 0) { $baseParts -join '/' } else { '.' }
+        $globPattern = $globParts -join '/'
 
         # Verify packages exist
         $packages = Get-ChildItem -Path $packagePath -File
