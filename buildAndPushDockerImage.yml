@@ -29,6 +29,10 @@ parameters:
 - name: imageRepositoryName
   type: string
   displayName: 'The name of the Docker Image Repository'
+- name: imageTagPrefix
+  type: string
+  default: ''
+  displayName: 'Prefix for the image tag (e.g. "6.7.2-"), prepended to Build.BuildNumber'
 - name: dockerhubRegistryConnection
   type: string
   default: ''
@@ -38,6 +42,8 @@ jobs:
 - job: createDockerImage
   displayName: Docker image
   dependsOn: ${{ parameters.dependsOn }}
+  variables:
+    imageTagPrefix: ${{ parameters.imageTagPrefix }}
   steps:
   - ${{ if ne(parameters.publishedCodeArtifactName, '') }}:
     - task: DownloadPipelineArtifact@2
@@ -78,7 +84,7 @@ jobs:
       if [ "${{ parameters.addLatestTag }}" = "True" ]; then 
         docker buildx build --platform linux/amd64,linux/arm64 \
           --build-arg=PUBLISHED_CODE=azuredevops \
-          --tag ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:$(Build.BuildNumber) \
+          --tag ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:$(imageTagPrefix)$(Build.BuildNumber) \
           --tag ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:latest \
           --push \
           --file ${{ parameters.dockerFile }} \
@@ -86,7 +92,7 @@ jobs:
       else
         docker buildx build --platform linux/amd64,linux/arm64 \
           --build-arg=PUBLISHED_CODE=azuredevops \
-          --tag ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:$(Build.BuildNumber) \
+          --tag ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:$(imageTagPrefix)$(Build.BuildNumber) \
           --push \
           --file ${{ parameters.dockerFile }} \
           $workingDir
