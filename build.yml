@@ -229,8 +229,9 @@ jobs:
           $version = $versionPrefix
         }
         
-        #Setting output variable $Version (used for VSTS) 
-        Write-Host "##vso[task.setvariable variable=Version;isOutput=true]$version" 
+        #Setting output variable $Version (used for VSTS)
+        Write-Host "##vso[task.setvariable variable=Version;isOutput=true]$version"
+        Write-Host "##vso[task.setvariable variable=VersionPrefix;isOutput=true]$versionPrefix"
 
   - task: DotNetCoreCLI@2
     displayName: 'dotnet test UnitTests with filter'
