@@ -233,6 +233,10 @@ jobs:
         Write-Host "##vso[task.setvariable variable=Version;isOutput=true]$version"
         Write-Host "##vso[task.setvariable variable=VersionPrefix;isOutput=true]$versionPrefix"
 
+        # Update the build number to include the version prefix, so that downstream
+        # pipelines (deploy) can use resources.pipeline.build.runName as the image tag.
+        Write-Host "##vso[build.updatebuildnumber]${versionPrefix}-$(Build.BuildNumber)"
+
   - task: DotNetCoreCLI@2
     displayName: 'dotnet test UnitTests with filter'
     condition: and(succeeded(), ne('${{ parameters.testFilter }}', ''))
