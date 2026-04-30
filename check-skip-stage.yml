@@ -46,10 +46,7 @@ stages:
     - checkout: self
       fetchDepth: 0
     - powershell: |
-        $patterns = @(
-        ${{ each pattern in parameters.ignorePatterns }}:
-          '${{ pattern }}'
-        )
+        $patterns = '${{ convertToJson(parameters.ignorePatterns) }}' | ConvertFrom-Json
 
         if ($patterns.Count -eq 0) {
           Write-Host "No ignorePatterns supplied; skip is always 'false'."
