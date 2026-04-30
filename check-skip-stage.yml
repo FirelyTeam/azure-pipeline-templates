@@ -64,7 +64,6 @@ stages:
         }
         else {
           Write-Host "Branch build: diffing HEAD~1..HEAD"
-          git fetch origin $env:BUILD_SOURCEBRANCH --depth=2 | Out-Null
           $changedFiles = git diff --name-only HEAD~1 HEAD
         }
 
