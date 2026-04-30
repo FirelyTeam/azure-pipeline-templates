@@ -1,0 +1,104 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: check-skip-stage.yml
+#
+# Reusable stage that inspects the changed files in the current build
+# and sets an output variable indicating whether downstream stages can
+# be skipped. A build is skippable when *every* changed file matches at
+# least one of the supplied regex patterns.
+#
+# Usage:
+#   - template: check-skip-stage.yml@templates
+#     parameters:
+#       ignorePatterns:
+#         - '^docs/.+$'
+#         - '^.*\.md$'
+#
+#   - stage: build
+#     dependsOn: checkSkipStage
+#     condition: and(succeeded(), ne(dependencies.checkSkipStage.outputs['checkChanges.evaluateIgnorePatterns.skip'], 'true'))
+#     ...
+
+parameters:
+- name: stageName
+  type: string
+  default: 'checkSkipStage'
+- name: displayName
+  type: string
+  default: 'Check for skippable changes'
+- name: ignorePatterns
+  type: object
+  default: []
+  # List of PowerShell-style regex patterns. If all changed files match
+  # at least one pattern, the stage's `skip` output variable is set to 'true'.
+- name: vmImage
+  type: string
+  default: 'ubuntu-latest'
+
+stages:
+- stage: ${{ parameters.stageName }}
+  displayName: ${{ parameters.displayName }}
+  jobs:
+  - job: checkChanges
+    displayName: ${{ parameters.displayName }}
+    pool:
+      vmImage: ${{ parameters.vmImage }}
+    steps:
+    - checkout: self
+      fetchDepth: 0
+    - powershell: |
+        $patterns = '${{ convertToJson(parameters.ignorePatterns) }}' | ConvertFrom-Json
+
+        if ($patterns.Count -eq 0) {
+          Write-Host "No ignorePatterns supplied; skip is always 'false'."
+          Write-Host "##vso[task.setvariable variable=skip;isOutput=true]false"
+          exit 0
+        }
+
+        Write-Host "##[group]Ignore patterns"
+        $patterns | ForEach-Object { Write-Host $_ }
+        Write-Host "##[endgroup]"
+
+        if ($env:BUILD_REASON -eq 'PullRequest') {
+          # SYSTEM_PULLREQUEST_TARGETBRANCHNAME is the bare branch name (e.g. 'main'),
+          # whereas SYSTEM_PULLREQUEST_TARGETBRANCH is the full ref ('refs/heads/main')
+          # which would yield an invalid 'origin/refs/heads/main' ref.
+          Write-Host "PR build: diffing against origin/$env:SYSTEM_PULLREQUEST_TARGETBRANCHNAME"
+          $changedFiles = @(git diff --name-only "origin/$env:SYSTEM_PULLREQUEST_TARGETBRANCHNAME" | Where-Object { $_ })
+        }
+        else {
+          Write-Host "Branch build: diffing HEAD~1..HEAD"
+          $changedFiles = @(git diff --name-only HEAD~1 HEAD | Where-Object { $_ })
+        }
+
+        Write-Host "##[group]Changed files"
+        $changedFiles | ForEach-Object { Write-Host $_ }
+        Write-Host "##[endgroup]"
+
+        if (-not $changedFiles) {
+          Write-Host "No changed files detected; not skipping."
+          Write-Host "##vso[task.setvariable variable=skip;isOutput=true]false"
+          exit 0
+        }
+
+        $skip = 'true'
+        foreach ($file in $changedFiles) {
+          $matched = $false
+          foreach ($pattern in $patterns) {
+            if ($file -match $pattern) {
+              $matched = $true
+              break
+            }
+          }
+          if (-not $matched) {
+            Write-Host "File '$file' does not match any ignore pattern; build will run."
+            $skip = 'false'
+            break
+          }
+        }
+
+        if ($skip -eq 'true') {
+          Write-Host "All changed files match ignore patterns; downstream stages will be skipped."
+        }
+        Write-Host "##vso[task.setvariable variable=skip;isOutput=true]$skip"
+      name: evaluateIgnorePatterns
+      displayName: 'Evaluate ignore patterns'
