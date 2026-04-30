@@ -15,7 +15,7 @@
 #
 #   - stage: build
 #     dependsOn: checkSkipStage
-#     condition: and(succeeded(), ne(dependencies.checkSkipStage.outputs['checkChanges.checkChanges.skip'], 'true'))
+#     condition: and(succeeded(), ne(dependencies.checkSkipStage.outputs['checkChanges.evaluateIgnorePatterns.skip'], 'true'))
 #     ...
 
 parameters:
@@ -59,12 +59,15 @@ stages:
         Write-Host "##[endgroup]"
 
         if ($env:BUILD_REASON -eq 'PullRequest') {
-          Write-Host "PR build: diffing against origin/$env:SYSTEM_PULLREQUEST_TARGETBRANCH"
-          $changedFiles = git diff --name-only "origin/$env:SYSTEM_PULLREQUEST_TARGETBRANCH"
+          # SYSTEM_PULLREQUEST_TARGETBRANCHNAME is the bare branch name (e.g. 'main'),
+          # whereas SYSTEM_PULLREQUEST_TARGETBRANCH is the full ref ('refs/heads/main')
+          # which would yield an invalid 'origin/refs/heads/main' ref.
+          Write-Host "PR build: diffing against origin/$env:SYSTEM_PULLREQUEST_TARGETBRANCHNAME"
+          $changedFiles = @(git diff --name-only "origin/$env:SYSTEM_PULLREQUEST_TARGETBRANCHNAME" | Where-Object { $_ })
         }
         else {
           Write-Host "Branch build: diffing HEAD~1..HEAD"
-          $changedFiles = git diff --name-only HEAD~1 HEAD
+          $changedFiles = @(git diff --name-only HEAD~1 HEAD | Where-Object { $_ })
         }
 
         Write-Host "##[group]Changed files"
@@ -97,5 +100,5 @@ stages:
           Write-Host "All changed files match ignore patterns; downstream stages will be skipped."
         }
         Write-Host "##vso[task.setvariable variable=skip;isOutput=true]$skip"
-      name: checkChanges
+      name: evaluateIgnorePatterns
       displayName: 'Evaluate ignore patterns'
