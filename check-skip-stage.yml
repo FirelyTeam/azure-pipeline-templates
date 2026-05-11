@@ -30,6 +30,15 @@ parameters:
   default: []
   # List of PowerShell-style regex patterns. If all changed files match
   # at least one pattern, the stage's `skip` output variable is set to 'true'.
+- name: neverSkipRefPatterns
+  type: object
+  default:
+    - '^refs/tags/v.*$'
+  # List of regex patterns matched against Build.SourceBranch. If the
+  # current build's ref matches any pattern, the skip output variable
+  # is forced to 'false' regardless of which files changed. Defaults to
+  # version tags (refs/tags/v*) so release builds are never skipped.
+  # Pass an empty list to disable.
 - name: vmImage
   type: string
   default: 'ubuntu-latest'
@@ -47,11 +56,22 @@ stages:
       fetchDepth: 0
     - powershell: |
         $patterns = '${{ convertToJson(parameters.ignorePatterns) }}' | ConvertFrom-Json
+        $neverSkipRefPatterns = '${{ convertToJson(parameters.neverSkipRefPatterns) }}' | ConvertFrom-Json
 
         if ($patterns.Count -eq 0) {
           Write-Host "No ignorePatterns supplied; skip is always 'false'."
           Write-Host "##vso[task.setvariable variable=skip;isOutput=true]false"
           exit 0
+        }
+
+        if ($neverSkipRefPatterns.Count -gt 0 -and $env:BUILD_SOURCEBRANCH) {
+          foreach ($refPattern in $neverSkipRefPatterns) {
+            if ($env:BUILD_SOURCEBRANCH -match $refPattern) {
+              Write-Host "Ref '$env:BUILD_SOURCEBRANCH' matches neverSkipRefPattern '$refPattern'; build will run."
+              Write-Host "##vso[task.setvariable variable=skip;isOutput=true]false"
+              exit 0
+            }
+          }
         }
 
         Write-Host "##[group]Ignore patterns"
