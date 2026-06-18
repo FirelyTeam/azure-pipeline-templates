@@ -17,6 +17,10 @@ parameters:
     type: string
     default: 'kubescape-results'
     displayName: 'Name of the artifact to publish'
+  - name: exceptionsFile
+    type: string
+    default: ''
+    displayName: 'Path to a Kubescape exceptions JSON file (optional)'
 
 jobs:
 - job: scan
@@ -24,6 +28,9 @@ jobs:
   pool:
     vmImage: 'ubuntu-latest'
   steps:
+  - ${{ if ne(parameters.exceptionsFile, '') }}:
+    - checkout: self
+
   - script: |
       echo "Validating that we are running on a system with apt..."
       if [ "$(uname -s)" != "Linux" ] || ! command -v apt >/dev/null 2>&1; then
@@ -53,8 +60,12 @@ jobs:
     displayName: 'Install Kubescape using apt'
 
   - script: |
-      echo "Running Kubescape scan with arguments: --format ${{ parameters.outputFormat }} --output ${{ parameters.outputFile }}"
-      kubescape scan --format ${{ parameters.outputFormat }} --output ${{ parameters.outputFile }}
+      EXCEPTIONS_ARG=""
+      if [ -n "${{ parameters.exceptionsFile }}" ]; then
+        EXCEPTIONS_ARG="--exceptions ${{ parameters.exceptionsFile }}"
+      fi
+      echo "Running Kubescape scan with arguments: --format ${{ parameters.outputFormat }} --output ${{ parameters.outputFile }} $EXCEPTIONS_ARG"
+      kubescape scan --format ${{ parameters.outputFormat }} --output ${{ parameters.outputFile }} $EXCEPTIONS_ARG
     displayName: 'Run Kubescape scan'
 
   - publish: ${{ parameters.outputFile }}
