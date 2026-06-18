@@ -30,6 +30,8 @@ jobs:
   steps:
   - ${{ if ne(parameters.exceptionsFile, '') }}:
     - checkout: self
+  - ${{ else }}:
+    - checkout: none
 
   - script: |
       echo "Validating that we are running on a system with apt..."
@@ -60,12 +62,18 @@ jobs:
     displayName: 'Install Kubescape using apt'
 
   - script: |
-      EXCEPTIONS_ARG=""
-      if [ -n "${{ parameters.exceptionsFile }}" ]; then
-        EXCEPTIONS_ARG="--exceptions ${{ parameters.exceptionsFile }}"
+      set -euo pipefail
+      EXCEPTIONS_FILE="${{ parameters.exceptionsFile }}"
+      SCAN_ARGS=(scan --format "${{ parameters.outputFormat }}" --output "${{ parameters.outputFile }}")
+      if [ -n "$EXCEPTIONS_FILE" ]; then
+        if [ ! -f "$EXCEPTIONS_FILE" ]; then
+          echo "Exceptions file not found: $EXCEPTIONS_FILE" >&2
+          exit 1
+        fi
+        SCAN_ARGS+=(--exceptions "$EXCEPTIONS_FILE")
       fi
-      echo "Running Kubescape scan with arguments: --format ${{ parameters.outputFormat }} --output ${{ parameters.outputFile }} $EXCEPTIONS_ARG"
-      kubescape scan --format ${{ parameters.outputFormat }} --output ${{ parameters.outputFile }} $EXCEPTIONS_ARG
+      echo "Running Kubescape ${SCAN_ARGS[*]}"
+      kubescape "${SCAN_ARGS[@]}"
     displayName: 'Run Kubescape scan'
 
   - publish: ${{ parameters.outputFile }}
