@@ -51,6 +51,10 @@ parameters:
   type: string
   default: ''
   displayName: 'Pipeline variable name to set to a "N critical, N high, ..." string when vulnerabilities are found'
+- name: cveListVariableName
+  type: string
+  default: ''
+  displayName: 'Pipeline variable name to set to a semicolon-separated "CVE-ID|Library|Version|Severity" list when vulnerabilities are found'
 
 steps:
 - ${{ if ne(parameters.dockerhubRegistryConnection, '') }}:
@@ -172,6 +176,26 @@ print(', '.join(result))
 ")
             echo "##vso[task.setvariable variable=$SUMMARY_VAR_NAME]$TRIVY_SUMMARY"
           fi
+          CVE_LIST_VAR_NAME="${{ parameters.cveListVariableName }}"
+          if [ -n "$CVE_LIST_VAR_NAME" ]; then
+            TRIVY_CVES=$(echo "$log_output" | python3 -c "
+import re, sys
+results = []
+seen = set()
+for line in sys.stdin:
+    if '│' not in line:
+        continue
+    parts = [p.strip() for p in line.split('│')]
+    if len(parts) < 6:
+        continue
+    lib, cve, sev, ver = parts[1], parts[2], parts[3], parts[5]
+    if re.match(r'CVE-', cve) and re.match(r'CRITICAL|HIGH|MEDIUM|LOW', sev) and lib and cve not in seen:
+        seen.add(cve)
+        results.append(f'{cve}|{lib}|{ver}|{sev}')
+print(';'.join(results))
+")
+            echo "##vso[task.setvariable variable=$CVE_LIST_VAR_NAME]$TRIVY_CVES"
+          fi
           exit 1
         fi
       fi
@@ -204,6 +228,26 @@ result = [str(counts[s]) + ' ' + s for s in order if counts.get(s, 0) > 0]
 print(', '.join(result))
 ")
         echo "##vso[task.setvariable variable=$SUMMARY_VAR_NAME]$TRIVY_SUMMARY"
+      fi
+      CVE_LIST_VAR_NAME="${{ parameters.cveListVariableName }}"
+      if [ -n "$CVE_LIST_VAR_NAME" ]; then
+        TRIVY_CVES=$(echo "$log_output" | python3 -c "
+import re, sys
+results = []
+seen = set()
+for line in sys.stdin:
+    if '│' not in line:
+        continue
+    parts = [p.strip() for p in line.split('│')]
+    if len(parts) < 6:
+        continue
+    lib, cve, sev, ver = parts[1], parts[2], parts[3], parts[5]
+    if re.match(r'CVE-', cve) and re.match(r'CRITICAL|HIGH|MEDIUM|LOW', sev) and lib and cve not in seen:
+        seen.add(cve)
+        results.append(f'{cve}|{lib}|{ver}|{sev}')
+print(';'.join(results))
+")
+        echo "##vso[task.setvariable variable=$CVE_LIST_VAR_NAME]$TRIVY_CVES"
       fi
       exit 1
     fi
