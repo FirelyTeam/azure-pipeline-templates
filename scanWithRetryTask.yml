@@ -173,7 +173,7 @@ steps:
     order = ['critical','high','medium','low']
     result = [str(counts[s]) + ' ' + s for s in order if counts.get(s, 0) > 0]
     print(', '.join(result))
-")
+    ")
             echo "##vso[task.setvariable variable=$SUMMARY_VAR_NAME]$TRIVY_SUMMARY"
           fi
           CVE_LIST_VAR_NAME="${{ parameters.cveListVariableName }}"
@@ -193,7 +193,7 @@ steps:
             seen.add(cve)
             results.append(cve + '|' + lib + '|' + ver + '|' + sev)
     print(';'.join(results))
-")
+    ")
             echo "##vso[task.setvariable variable=$CVE_LIST_VAR_NAME]$TRIVY_CVES"
           fi
           exit 1
@@ -226,7 +226,7 @@ steps:
     order = ['critical','high','medium','low']
     result = [str(counts[s]) + ' ' + s for s in order if counts.get(s, 0) > 0]
     print(', '.join(result))
-")
+    ")
         echo "##vso[task.setvariable variable=$SUMMARY_VAR_NAME]$TRIVY_SUMMARY"
       fi
       CVE_LIST_VAR_NAME="${{ parameters.cveListVariableName }}"
@@ -246,7 +246,7 @@ steps:
             seen.add(cve)
             results.append(cve + '|' + lib + '|' + ver + '|' + sev)
     print(';'.join(results))
-")
+    ")
         echo "##vso[task.setvariable variable=$CVE_LIST_VAR_NAME]$TRIVY_CVES"
       fi
       exit 1
