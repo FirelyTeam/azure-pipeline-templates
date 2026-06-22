@@ -47,6 +47,10 @@ parameters:
   type: string
   default: ''
   displayName: 'Pipeline variable name to set to "true" when vulnerabilities are found (used with continueOnError)'
+- name: summaryVariableName
+  type: string
+  default: ''
+  displayName: 'Pipeline variable name to set to a "N critical, N high, ..." string when vulnerabilities are found'
 
 steps:
 - ${{ if ne(parameters.dockerhubRegistryConnection, '') }}:
@@ -145,6 +149,29 @@ steps:
           if [ -n "$VULN_VAR_NAME" ]; then
             echo "##vso[task.setvariable variable=$VULN_VAR_NAME]true"
           fi
+          SUMMARY_VAR_NAME="${{ parameters.summaryVariableName }}"
+          if [ -n "$SUMMARY_VAR_NAME" ]; then
+            TRIVY_SUMMARY=$(echo "$log_output" | python3 -c "
+import re, sys
+counts = {}
+for line in sys.stdin:
+    m = re.search(r'Total:\s*\d+\s*\(([^)]+)\)', line)
+    if m:
+        for item in m.group(1).split(','):
+            kv = item.strip().split(':')
+            if len(kv) == 2:
+                sev = kv[0].strip().lower()
+                try:
+                    cnt = int(kv[1].strip())
+                    if sev in ('critical','high','medium','low') and cnt > 0:
+                        counts[sev] = counts.get(sev, 0) + cnt
+                except: pass
+order = ['critical','high','medium','low']
+result = [str(counts[s]) + ' ' + s for s in order if counts.get(s, 0) > 0]
+print(', '.join(result))
+")
+            echo "##vso[task.setvariable variable=$SUMMARY_VAR_NAME]$TRIVY_SUMMARY"
+          fi
           exit 1
         fi
       fi
@@ -154,6 +181,29 @@ steps:
       VULN_VAR_NAME="${{ parameters.vulnFoundVariableName }}"
       if [ -n "$VULN_VAR_NAME" ]; then
         echo "##vso[task.setvariable variable=$VULN_VAR_NAME]true"
+      fi
+      SUMMARY_VAR_NAME="${{ parameters.summaryVariableName }}"
+      if [ -n "$SUMMARY_VAR_NAME" ]; then
+        TRIVY_SUMMARY=$(echo "$log_output" | python3 -c "
+import re, sys
+counts = {}
+for line in sys.stdin:
+    m = re.search(r'Total:\s*\d+\s*\(([^)]+)\)', line)
+    if m:
+        for item in m.group(1).split(','):
+            kv = item.strip().split(':')
+            if len(kv) == 2:
+                sev = kv[0].strip().lower()
+                try:
+                    cnt = int(kv[1].strip())
+                    if sev in ('critical','high','medium','low') and cnt > 0:
+                        counts[sev] = counts.get(sev, 0) + cnt
+                except: pass
+order = ['critical','high','medium','low']
+result = [str(counts[s]) + ' ' + s for s in order if counts.get(s, 0) > 0]
+print(', '.join(result))
+")
+        echo "##vso[task.setvariable variable=$SUMMARY_VAR_NAME]$TRIVY_SUMMARY"
       fi
       exit 1
     fi
