@@ -156,43 +156,43 @@ steps:
           SUMMARY_VAR_NAME="${{ parameters.summaryVariableName }}"
           if [ -n "$SUMMARY_VAR_NAME" ]; then
             TRIVY_SUMMARY=$(echo "$log_output" | python3 -c "
-import re, sys
-counts = {}
-for line in sys.stdin:
-    m = re.search(r'Total:\s*\d+\s*\(([^)]+)\)', line)
-    if m:
-        for item in m.group(1).split(','):
-            kv = item.strip().split(':')
-            if len(kv) == 2:
-                sev = kv[0].strip().lower()
-                try:
-                    cnt = int(kv[1].strip())
-                    if sev in ('critical','high','medium','low') and cnt > 0:
-                        counts[sev] = counts.get(sev, 0) + cnt
-                except: pass
-order = ['critical','high','medium','low']
-result = [str(counts[s]) + ' ' + s for s in order if counts.get(s, 0) > 0]
-print(', '.join(result))
+    import re, sys
+    counts = {}
+    for line in sys.stdin:
+        m = re.search(r'Total:\s*\d+\s*\(([^)]+)\)', line)
+        if m:
+            for item in m.group(1).split(','):
+                kv = item.strip().split(':')
+                if len(kv) == 2:
+                    sev = kv[0].strip().lower()
+                    try:
+                        cnt = int(kv[1].strip())
+                        if sev in ('critical','high','medium','low') and cnt > 0:
+                            counts[sev] = counts.get(sev, 0) + cnt
+                    except: pass
+    order = ['critical','high','medium','low']
+    result = [str(counts[s]) + ' ' + s for s in order if counts.get(s, 0) > 0]
+    print(', '.join(result))
 ")
             echo "##vso[task.setvariable variable=$SUMMARY_VAR_NAME]$TRIVY_SUMMARY"
           fi
           CVE_LIST_VAR_NAME="${{ parameters.cveListVariableName }}"
           if [ -n "$CVE_LIST_VAR_NAME" ]; then
             TRIVY_CVES=$(echo "$log_output" | python3 -c "
-import re, sys
-results = []
-seen = set()
-for line in sys.stdin:
-    if '│' not in line:
-        continue
-    parts = [p.strip() for p in line.split('│')]
-    if len(parts) < 6:
-        continue
-    lib, cve, sev, ver = parts[1], parts[2], parts[3], parts[5]
-    if re.match(r'CVE-', cve) and re.match(r'CRITICAL|HIGH|MEDIUM|LOW', sev) and lib and cve not in seen:
-        seen.add(cve)
-        results.append(f'{cve}|{lib}|{ver}|{sev}')
-print(';'.join(results))
+    import re, sys
+    results = []
+    seen = set()
+    for line in sys.stdin:
+        if chr(9474) not in line:
+            continue
+        parts = [p.strip() for p in line.split(chr(9474))]
+        if len(parts) < 6:
+            continue
+        lib, cve, sev, ver = parts[1], parts[2], parts[3], parts[5]
+        if re.match(r'CVE-', cve) and re.match(r'CRITICAL|HIGH|MEDIUM|LOW', sev) and lib and cve not in seen:
+            seen.add(cve)
+            results.append(cve + '|' + lib + '|' + ver + '|' + sev)
+    print(';'.join(results))
 ")
             echo "##vso[task.setvariable variable=$CVE_LIST_VAR_NAME]$TRIVY_CVES"
           fi
@@ -209,43 +209,43 @@ print(';'.join(results))
       SUMMARY_VAR_NAME="${{ parameters.summaryVariableName }}"
       if [ -n "$SUMMARY_VAR_NAME" ]; then
         TRIVY_SUMMARY=$(echo "$log_output" | python3 -c "
-import re, sys
-counts = {}
-for line in sys.stdin:
-    m = re.search(r'Total:\s*\d+\s*\(([^)]+)\)', line)
-    if m:
-        for item in m.group(1).split(','):
-            kv = item.strip().split(':')
-            if len(kv) == 2:
-                sev = kv[0].strip().lower()
-                try:
-                    cnt = int(kv[1].strip())
-                    if sev in ('critical','high','medium','low') and cnt > 0:
-                        counts[sev] = counts.get(sev, 0) + cnt
-                except: pass
-order = ['critical','high','medium','low']
-result = [str(counts[s]) + ' ' + s for s in order if counts.get(s, 0) > 0]
-print(', '.join(result))
+    import re, sys
+    counts = {}
+    for line in sys.stdin:
+        m = re.search(r'Total:\s*\d+\s*\(([^)]+)\)', line)
+        if m:
+            for item in m.group(1).split(','):
+                kv = item.strip().split(':')
+                if len(kv) == 2:
+                    sev = kv[0].strip().lower()
+                    try:
+                        cnt = int(kv[1].strip())
+                        if sev in ('critical','high','medium','low') and cnt > 0:
+                            counts[sev] = counts.get(sev, 0) + cnt
+                    except: pass
+    order = ['critical','high','medium','low']
+    result = [str(counts[s]) + ' ' + s for s in order if counts.get(s, 0) > 0]
+    print(', '.join(result))
 ")
         echo "##vso[task.setvariable variable=$SUMMARY_VAR_NAME]$TRIVY_SUMMARY"
       fi
       CVE_LIST_VAR_NAME="${{ parameters.cveListVariableName }}"
       if [ -n "$CVE_LIST_VAR_NAME" ]; then
         TRIVY_CVES=$(echo "$log_output" | python3 -c "
-import re, sys
-results = []
-seen = set()
-for line in sys.stdin:
-    if '│' not in line:
-        continue
-    parts = [p.strip() for p in line.split('│')]
-    if len(parts) < 6:
-        continue
-    lib, cve, sev, ver = parts[1], parts[2], parts[3], parts[5]
-    if re.match(r'CVE-', cve) and re.match(r'CRITICAL|HIGH|MEDIUM|LOW', sev) and lib and cve not in seen:
-        seen.add(cve)
-        results.append(f'{cve}|{lib}|{ver}|{sev}')
-print(';'.join(results))
+    import re, sys
+    results = []
+    seen = set()
+    for line in sys.stdin:
+        if chr(9474) not in line:
+            continue
+        parts = [p.strip() for p in line.split(chr(9474))]
+        if len(parts) < 6:
+            continue
+        lib, cve, sev, ver = parts[1], parts[2], parts[3], parts[5]
+        if re.match(r'CVE-', cve) and re.match(r'CRITICAL|HIGH|MEDIUM|LOW', sev) and lib and cve not in seen:
+            seen.add(cve)
+            results.append(cve + '|' + lib + '|' + ver + '|' + sev)
+    print(';'.join(results))
 ")
         echo "##vso[task.setvariable variable=$CVE_LIST_VAR_NAME]$TRIVY_CVES"
       fi
