@@ -39,6 +39,14 @@ parameters:
   type: string
   default: ''
   displayName: 'The Docker Hub registry connection (for authenticated pulls to avoid rate limits)'
+- name: continueOnError
+  type: boolean
+  default: false
+  displayName: 'Whether to continue the pipeline when vulnerabilities are found'
+- name: vulnFoundVariableName
+  type: string
+  default: ''
+  displayName: 'Pipeline variable name to set to "true" when vulnerabilities are found (used with continueOnError)'
 
 steps:
 - ${{ if ne(parameters.dockerhubRegistryConnection, '') }}:
@@ -133,12 +141,19 @@ steps:
           break
         else
           echo "Scan failed due to other errors."
+          ${{ if ne(parameters.vulnFoundVariableName, '') }}
+          echo "##vso[task.setvariable variable=${{ parameters.vulnFoundVariableName }}]true"
+          ${{ endif }}
           exit 1
         fi
       fi
     done
     if [ $count -eq $retries ]; then
       echo "Scan failed after $retries attempts due to DB download error."
+      ${{ if ne(parameters.vulnFoundVariableName, '') }}
+      echo "##vso[task.setvariable variable=${{ parameters.vulnFoundVariableName }}]true"
+      ${{ endif }}
       exit 1
     fi
   displayName: ${{ parameters.displayName }}
+  continueOnError: ${{ parameters.continueOnError }}
