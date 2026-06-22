@@ -141,18 +141,20 @@ steps:
           break
         else
           echo "Scan failed due to other errors."
-          ${{ if ne(parameters.vulnFoundVariableName, '') }}
-          echo "##vso[task.setvariable variable=${{ parameters.vulnFoundVariableName }}]true"
-          ${{ endif }}
+          VULN_VAR_NAME="${{ parameters.vulnFoundVariableName }}"
+          if [ -n "$VULN_VAR_NAME" ]; then
+            echo "##vso[task.setvariable variable=$VULN_VAR_NAME]true"
+          fi
           exit 1
         fi
       fi
     done
     if [ $count -eq $retries ]; then
       echo "Scan failed after $retries attempts due to DB download error."
-      ${{ if ne(parameters.vulnFoundVariableName, '') }}
-      echo "##vso[task.setvariable variable=${{ parameters.vulnFoundVariableName }}]true"
-      ${{ endif }}
+      VULN_VAR_NAME="${{ parameters.vulnFoundVariableName }}"
+      if [ -n "$VULN_VAR_NAME" ]; then
+        echo "##vso[task.setvariable variable=$VULN_VAR_NAME]true"
+      fi
       exit 1
     fi
   displayName: ${{ parameters.displayName }}
