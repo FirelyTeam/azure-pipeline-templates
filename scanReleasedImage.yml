@@ -1,0 +1,204 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: scanReleasedImage.yml
+# Description: Pull a released Docker image and scan it with Docker Scout and Trivy.
+# Prerequisites: Docker Hub must already be logged in and Docker Scout CLI installed.
+
+parameters:
+- name: imageName
+  type: string
+  displayName: 'Docker image repository name (e.g. firely/server)'
+- name: imageTag
+  type: string
+  displayName: 'Docker image tag (e.g. 5.3.0 or a runtime variable like $(FS_CURRENT))'
+- name: scanId
+  type: string
+  displayName: 'Short unique ID used for temp file names (e.g. fs-current, fa, fsi)'
+- name: trivyIgnoreFile
+  type: string
+  default: ''
+  displayName: 'Path to .trivyignore file; creates empty OpenVEX if not found'
+- name: trivyCacheAzureSubscription
+  type: string
+  default: ''
+  displayName: 'Azure subscription used to retrieve the Trivy DB cache'
+- name: trivyCacheStorageAccount
+  type: string
+  default: ''
+  displayName: 'Storage account name where the Trivy DB cache is stored'
+- name: dockerhubRegistryConnection
+  type: string
+  default: ''
+  displayName: 'Docker Hub service connection (required for Docker Scout)'
+- name: vulnFoundVariableName
+  type: string
+  default: ''
+  displayName: 'Pipeline variable to set to "true" when vulnerabilities are found'
+- name: scoutSummaryVariableName
+  type: string
+  default: ''
+  displayName: 'Pipeline variable to store Scout CVE severity summary (e.g. "2 high, 1 medium")'
+- name: scoutCvesVariableName
+  type: string
+  default: ''
+  displayName: 'Pipeline variable to store Scout CVE list (semicolon-separated CVE|lib|ver|sev)'
+- name: trivySummaryVariableName
+  type: string
+  default: ''
+  displayName: 'Pipeline variable to store Trivy CVE severity summary'
+- name: trivyCvesVariableName
+  type: string
+  default: ''
+  displayName: 'Pipeline variable to store Trivy CVE list (semicolon-separated CVE|lib|ver|sev)'
+
+steps:
+- script: docker pull ${{ parameters.imageName }}:${{ parameters.imageTag }}
+  displayName: "Pull ${{ parameters.imageName }}:${{ parameters.imageTag }}"
+
+- task: PowerShell@2
+  displayName: "Convert trivyIgnore to OpenVEX for ${{ parameters.imageName }}:${{ parameters.imageTag }}"
+  inputs:
+    targetType: inline
+    script: |
+      $TrivyIgnoreFile = "${{ parameters.trivyIgnoreFile }}"
+      $OutputFile      = "vex-${{ parameters.scanId }}.json"
+      $Author          = "devops@fire.ly"
+      $ProductPurl     = "pkg:docker/${{ parameters.imageName }}@${{ parameters.imageTag }}"
+
+      Write-Host "Converting trivyignore -> OpenVEX"
+      Write-Host "Input : $TrivyIgnoreFile"
+      Write-Host "Output: $OutputFile"
+
+      $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:sszzz")
+      $vexId     = "https://openvex.dev/docs/public/vex-" + ([guid]::NewGuid().ToString().ToLower())
+
+      if (-not (Test-Path $TrivyIgnoreFile)) {
+        Write-Host "No trivyignore file found at '$TrivyIgnoreFile'. Creating empty OpenVEX."
+        $document = @{
+          "@context" = "https://openvex.dev/ns/v0.2.0"
+          "@id"      = $vexId
+          author     = $Author
+          timestamp  = $timestamp
+          version    = 1
+          statements = @()
+        }
+        $document | ConvertTo-Json -Depth 10 | Out-File -Encoding utf8 -FilePath $OutputFile
+      }
+      else {
+        $statements = @()
+        $today = Get-Date
+
+        Get-Content $TrivyIgnoreFile | ForEach-Object {
+          $line = $_.Trim()
+          if ($line -eq "" -or $line.StartsWith("#")) { return }
+
+          $CVE = $line.Split(" ")[0].Trim()
+
+          $Expiry = $null
+          if ($line -match "exp:(\d{4}-\d{2}-\d{2})") { $Expiry = $Matches[1] }
+
+          if ($Expiry) {
+            $expiryDate = Get-Date $Expiry
+            if ($expiryDate -le $today) {
+              $Status        = "affected"
+              $Justification = "no_known_fix"
+              $Impact        = "Ignore period expired on $Expiry"
+            }
+            else {
+              $Status        = "not_affected"
+              $Justification = "no_known_fix"
+              $Impact        = "Ignored via .trivyignore migration (expires on $Expiry)"
+            }
+          }
+          else {
+            $Status        = "not_affected"
+            $Justification = "no_known_fix"
+            $Impact        = "Ignored via .trivyignore migration"
+          }
+
+          $statements += @{
+            vulnerability    = @{ name = $CVE }
+            timestamp        = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:sszzz")
+            products         = @(@{ "@id" = $ProductPurl })
+            status           = $Status
+            justification    = $Justification
+            impact_statement = $Impact
+          }
+        }
+
+        $document = @{
+          "@context" = "https://openvex.dev/ns/v0.2.0"
+          "@id"      = $vexId
+          author     = $Author
+          timestamp  = $timestamp
+          version    = 1
+          statements = $statements
+        }
+        $document | ConvertTo-Json -Depth 10 | Out-File -Encoding utf8 -FilePath $OutputFile
+        Write-Host "OpenVEX file created: $OutputFile"
+      }
+
+- task: CmdLine@2
+  displayName: "Docker Scout — ${{ parameters.imageName }}:${{ parameters.imageTag }}"
+  continueOnError: true
+  inputs:
+    script: |
+      FAILED=0
+      docker scout cves --vex-location vex-${{ parameters.scanId }}.json --only-base ${{ parameters.imageName }}:${{ parameters.imageTag }} --exit-code --only-severity critical,high,medium,low 2>&1 | tee /tmp/scout-${{ parameters.scanId }}.txt
+      if [ ${PIPESTATUS[0]} -ne 0 ]; then FAILED=1; fi
+      docker scout cves --vex-location vex-${{ parameters.scanId }}.json --ignore-base ${{ parameters.imageName }}:${{ parameters.imageTag }} --exit-code --only-severity critical,high,medium,low 2>&1 | tee -a /tmp/scout-${{ parameters.scanId }}.txt
+      if [ ${PIPESTATUS[0]} -ne 0 ]; then FAILED=1; fi
+      SUMMARY=$(python3 -c "
+      import re
+      counts = {}
+      for line in open('/tmp/scout-${{ parameters.scanId }}.txt'):
+          m = re.search(r'\b(CRITICAL|HIGH|MEDIUM|LOW)\s+(\d+)\s*$', line)
+          if m:
+              k = m.group(1).lower()
+              counts[k] = counts.get(k, 0) + int(m.group(2))
+      order = ['critical','high','medium','low']
+      parts = [str(counts[s]) + ' ' + s for s in order if counts.get(s, 0) > 0]
+      print(', '.join(parts) if parts else '')
+      ")
+      echo "Scout CVE summary (${{ parameters.imageName }}:${{ parameters.imageTag }}): ${SUMMARY:-none}"
+      SCOUT_SUMMARY_VAR="${{ parameters.scoutSummaryVariableName }}"
+      if [ -n "$SCOUT_SUMMARY_VAR" ]; then
+        echo "##vso[task.setvariable variable=$SCOUT_SUMMARY_VAR]$SUMMARY"
+      fi
+      CVES=$(python3 -c "
+      import re
+      results = []
+      cur_lib = cur_ver = None
+      for line in open('/tmp/scout-${{ parameters.scanId }}.txt'):
+          m = re.match(r'\s+\d+C\s+\d+H\s+\d+M\s+\d+L\s+(\S+)\s+(\S+)\s*$', line)
+          if m:
+              cur_lib, cur_ver = m.group(1), m.group(2)
+              continue
+          m = re.search(r'✗\s+(CRITICAL|HIGH|MEDIUM|LOW)\s+(CVE-\S+)', line)
+          if m and cur_lib:
+              results.append(m.group(2) + '|' + cur_lib + '|' + cur_ver + '|' + m.group(1))
+      seen = set()
+      deduped = [r for r in results if not (r.split('|')[0] in seen or seen.add(r.split('|')[0]))]
+      print(';'.join(deduped))
+      ")
+      SCOUT_CVES_VAR="${{ parameters.scoutCvesVariableName }}"
+      if [ -n "$SCOUT_CVES_VAR" ]; then
+        echo "##vso[task.setvariable variable=$SCOUT_CVES_VAR]$CVES"
+      fi
+      VULN_VAR="${{ parameters.vulnFoundVariableName }}"
+      if [ $FAILED -eq 1 ] && [ -n "$VULN_VAR" ]; then
+        echo "##vso[task.setvariable variable=$VULN_VAR]true"
+      fi
+      exit $FAILED
+
+- template: scanWithRetryTask.yml
+  parameters:
+    trivyCacheAzureSubscription: ${{ parameters.trivyCacheAzureSubscription }}
+    trivyCacheStorageAccount: ${{ parameters.trivyCacheStorageAccount }}
+    dockerhubRegistryConnection: ${{ parameters.dockerhubRegistryConnection }}
+    trivyIgnoreFile: ${{ parameters.trivyIgnoreFile }}
+    trivyExtraArguments: image ${{ parameters.imageName }}:${{ parameters.imageTag }}
+    displayName: "Trivy — ${{ parameters.imageName }}:${{ parameters.imageTag }}"
+    continueOnError: true
+    vulnFoundVariableName: ${{ parameters.vulnFoundVariableName }}
+    summaryVariableName: ${{ parameters.trivySummaryVariableName }}
+    cveListVariableName: ${{ parameters.trivyCvesVariableName }}
