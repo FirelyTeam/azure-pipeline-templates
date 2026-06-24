@@ -67,104 +67,13 @@ jobs:
       command: login
       containerRegistry: ${{ parameters.dockerhubRegistryConnection }}
       
-  - task: PowerShell@2
-    displayName: "Convert trivyignore.txt to OpenVEX file"
+  - template: convertTrivyIgnoreToVex.yml
     condition: and(succeeded(), eq(variables['run_docker_scout'], 'true'))
-    inputs:
-      targetType: inline
-      script: |
-        $TrivyIgnoreFile = "${{ parameters.trivyIgnoreFile }}"
-        $OutputFile      = "vex.json"
-        $Author          = "devops@fire.ly"
-        $ProductPurl     = "$(docker_image_package_url)"
-
-        Write-Host "Converting trivyignore → OpenVEX"
-        Write-Host "Input: $TrivyIgnoreFile"
-        Write-Host "Output: $OutputFile"
-
-        # RFC3339 timestamp
-        $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:sszzz")
-        $vexId = "https://openvex.dev/docs/public/vex-" + ([guid]::NewGuid().ToString().ToLower())
-
-        if (-not (Test-Path $TrivyIgnoreFile)) {
-          Write-Host "No trivy ignore file found at '$TrivyIgnoreFile'. Creating empty OpenVEX ($OutputFile) with no statements."
-          $document = @{
-            "@context" = "https://openvex.dev/ns/v0.2.0"
-            "@id" = $vexId
-            author = $Author
-            timestamp = $timestamp
-            version = 1
-            statements = @()
-          }
-          $document | ConvertTo-Json -Depth 10 | Out-File -Encoding utf8 -FilePath $OutputFile
-          Write-Host "Created empty OpenVEX file: $OutputFile"
-        }
-        else {
-          $statements = @()
-          $today = Get-Date
-
-          Get-Content $TrivyIgnoreFile | ForEach-Object {
-            $line = $_.Trim()
-            if ($line -eq "" -or $line.StartsWith("#")) { return }
-
-            $CVE = $line.Split(" ")[0].Trim()
-
-            $Expiry = $null
-            if ($line -match "exp:(\d{4}-\d{2}-\d{2})") {
-              $Expiry = $Matches[1]
-            }
-
-            if ($Expiry) {
-              $expiryDate = Get-Date $Expiry
-
-              if ($expiryDate -le $today) {
-                $Status = "affected"
-                $Justification = "no_known_fix"
-                $Impact = "Ignore period expired on $Expiry"
-              }
-              else {
-                $Status = "not_affected"
-                $Justification = "no_known_fix"
-                $Impact = "Ignored via .trivyignore migration (expires on $Expiry)"
-              }
-            }
-            else {
-              $Status = "not_affected"
-              $Justification = "no_known_fix"
-              $Impact = "Ignored via .trivyignore migration"
-            }
-
-            $stmtTs = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:sszzz")
-
-            $stmt = @{
-              vulnerability = @{ name = $CVE }
-              timestamp = $stmtTs
-              products = @(@{ "@id" = $ProductPurl })
-              status = $Status
-              justification = $Justification
-              impact_statement = $Impact
-            }
-
-            $statements += $stmt
-          }
-
-          $document = @{
-            "@context" = "https://openvex.dev/ns/v0.2.0"
-            "@id" = $vexId
-            author = $Author
-            timestamp = $timestamp
-            version = 1
-            statements = $statements
-          }
-
-          $document | ConvertTo-Json -Depth 10 | Out-File -Encoding utf8 -FilePath $OutputFile
-
-          Write-Host "OpenVEX file created: $OutputFile"
-          Write-Host "Printing vex.json:"
-          Write-Host "----------------------------------------"
-          Get-Content $OutputFile | Write-Host
-          Write-Host "----------------------------------------"
-        }  
+    parameters:
+      trivyIgnoreFile: ${{ parameters.trivyIgnoreFile }}
+      outputFile: vex.json
+      productPurl: $(docker_image_package_url)
+      displayName: "Convert trivyignore.txt to OpenVEX file"
 
   - task: CmdLine@2
     displayName: Run docker scout on image
