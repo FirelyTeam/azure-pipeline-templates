@@ -71,6 +71,8 @@ steps:
       if [ ${PIPESTATUS[0]} -ne 0 ]; then FAILED=1; fi
       docker scout cves --vex-location vex-${{ parameters.scanId }}.json --ignore-base ${{ parameters.imageName }}:${{ parameters.imageTag }} --exit-code --only-severity critical,high,medium,low 2>&1 | tee -a /tmp/scout-${{ parameters.scanId }}.txt
       if [ ${PIPESTATUS[0]} -ne 0 ]; then FAILED=1; fi
+      # Python code is at YAML block base indentation (6 spaces); YAML strips
+      # those spaces before bash runs, so Python receives correctly 0-indented code.
       SUMMARY=$(python3 -c "
       import re
       counts = {}
@@ -88,6 +90,7 @@ steps:
       if [ -n "$SCOUT_SUMMARY_VAR" ]; then
         echo "##vso[task.setvariable variable=$SCOUT_SUMMARY_VAR]$SUMMARY"
       fi
+      # Same YAML indentation stripping applies here.
       CVES=$(python3 -c "
       import re
       results = []
