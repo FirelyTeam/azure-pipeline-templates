@@ -155,6 +155,8 @@ steps:
           fi
           SUMMARY_VAR_NAME="${{ parameters.summaryVariableName }}"
           if [ -n "$SUMMARY_VAR_NAME" ]; then
+            # Python code is at YAML block base indentation (4 spaces); YAML strips
+            # those spaces before bash runs, so Python receives correctly 0-indented code.
             TRIVY_SUMMARY=$(echo "$log_output" | python3 -c "
     import re, sys
     counts = {}
@@ -202,12 +204,10 @@ steps:
     done
     if [ $count -eq $retries ]; then
       echo "Scan failed after $retries attempts due to DB download error."
-      VULN_VAR_NAME="${{ parameters.vulnFoundVariableName }}"
-      if [ -n "$VULN_VAR_NAME" ]; then
-        echo "##vso[task.setvariable variable=$VULN_VAR_NAME]true"
-      fi
       SUMMARY_VAR_NAME="${{ parameters.summaryVariableName }}"
       if [ -n "$SUMMARY_VAR_NAME" ]; then
+        # Python code is at YAML block base indentation (4 spaces); YAML strips
+        # those spaces before bash runs, so Python receives correctly 0-indented code.
         TRIVY_SUMMARY=$(echo "$log_output" | python3 -c "
     import re, sys
     counts = {}
