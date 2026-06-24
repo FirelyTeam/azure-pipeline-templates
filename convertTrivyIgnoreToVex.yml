@@ -18,10 +18,15 @@ parameters:
   type: string
   default: 'Convert trivyIgnore to OpenVEX'
   displayName: 'Display name for this step'
+- name: condition
+  type: string
+  default: 'succeeded()'
+  displayName: 'Condition expression for this step'
 
 steps:
 - task: PowerShell@2
   displayName: ${{ parameters.displayName }}
+  condition: ${{ parameters.condition }}
   inputs:
     targetType: inline
     script: |

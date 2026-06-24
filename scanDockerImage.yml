@@ -68,12 +68,12 @@ jobs:
       containerRegistry: ${{ parameters.dockerhubRegistryConnection }}
       
   - template: convertTrivyIgnoreToVex.yml
-    condition: and(succeeded(), eq(variables['run_docker_scout'], 'true'))
     parameters:
       trivyIgnoreFile: ${{ parameters.trivyIgnoreFile }}
       outputFile: vex.json
       productPurl: $(docker_image_package_url)
       displayName: "Convert trivyignore.txt to OpenVEX file"
+      condition: "and(succeeded(), eq(variables['run_docker_scout'], 'true'))"
 
   - task: CmdLine@2
     displayName: Run docker scout on image
