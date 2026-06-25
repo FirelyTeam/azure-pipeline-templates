@@ -1,0 +1,113 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: convertTrivyIgnoreToVex.yml
+# Description: Convert a .trivyignore file to an OpenVEX JSON file for use with Docker Scout.
+#              Creates an empty OpenVEX document if the trivyignore file is not found.
+
+parameters:
+- name: trivyIgnoreFile
+  type: string
+  default: ''
+  displayName: 'Path to .trivyignore file; creates empty OpenVEX if not found'
+- name: outputFile
+  type: string
+  displayName: 'Output path for the generated OpenVEX JSON file (e.g. vex.json)'
+- name: productPurl
+  type: string
+  displayName: 'Package URL identifying the product (e.g. pkg:docker/firely/server@5.3.0)'
+- name: displayName
+  type: string
+  default: 'Convert trivyIgnore to OpenVEX'
+  displayName: 'Display name for this step'
+- name: condition
+  type: string
+  default: 'succeeded()'
+  displayName: 'Condition expression for this step'
+
+steps:
+- task: PowerShell@2
+  displayName: ${{ parameters.displayName }}
+  condition: ${{ parameters.condition }}
+  inputs:
+    targetType: inline
+    script: |
+      $TrivyIgnoreFile = "${{ parameters.trivyIgnoreFile }}"
+      $OutputFile      = "${{ parameters.outputFile }}"
+      $Author          = "devops@fire.ly"
+      $ProductPurl     = "${{ parameters.productPurl }}"
+
+      Write-Host "Converting trivyignore -> OpenVEX"
+      Write-Host "Input : $TrivyIgnoreFile"
+      Write-Host "Output: $OutputFile"
+
+      $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:sszzz")
+      $vexId     = "https://openvex.dev/docs/public/vex-" + ([guid]::NewGuid().ToString().ToLower())
+
+      if (-not (Test-Path $TrivyIgnoreFile)) {
+        Write-Host "No trivyignore file found at '$TrivyIgnoreFile'. Creating empty OpenVEX."
+        $document = @{
+          "@context" = "https://openvex.dev/ns/v0.2.0"
+          "@id"      = $vexId
+          author     = $Author
+          timestamp  = $timestamp
+          version    = 1
+          statements = @()
+        }
+        $document | ConvertTo-Json -Depth 10 | Out-File -Encoding utf8 -FilePath $OutputFile
+        Write-Host "Created empty OpenVEX file: $OutputFile"
+      }
+      else {
+        $statements = @()
+        $today = Get-Date
+
+        Get-Content $TrivyIgnoreFile | ForEach-Object {
+          $line = $_.Trim()
+          if ($line -eq "" -or $line.StartsWith("#")) { return }
+
+          $CVE    = $line.Split(" ")[0].Trim()
+          $Expiry = $null
+          if ($line -match "exp:(\d{4}-\d{2}-\d{2})") { $Expiry = $Matches[1] }
+
+          if ($Expiry) {
+            $expiryDate = Get-Date $Expiry
+            if ($expiryDate -le $today) {
+              $Status        = "affected"
+              $Justification = "no_known_fix"
+              $Impact        = "Ignore period expired on $Expiry"
+            }
+            else {
+              $Status        = "not_affected"
+              $Justification = "no_known_fix"
+              $Impact        = "Ignored via .trivyignore migration (expires on $Expiry)"
+            }
+          }
+          else {
+            $Status        = "not_affected"
+            $Justification = "no_known_fix"
+            $Impact        = "Ignored via .trivyignore migration"
+          }
+
+          $statements += @{
+            vulnerability    = @{ name = $CVE }
+            timestamp        = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:sszzz")
+            products         = @(@{ "@id" = $ProductPurl })
+            status           = $Status
+            justification    = $Justification
+            impact_statement = $Impact
+          }
+        }
+
+        $document = @{
+          "@context" = "https://openvex.dev/ns/v0.2.0"
+          "@id"      = $vexId
+          author     = $Author
+          timestamp  = $timestamp
+          version    = 1
+          statements = $statements
+        }
+        $document | ConvertTo-Json -Depth 10 | Out-File -Encoding utf8 -FilePath $OutputFile
+
+        Write-Host "OpenVEX file created: $OutputFile"
+        Write-Host "----------------------------------------"
+        Get-Content $OutputFile | Write-Host
+        Write-Host "----------------------------------------"
+      }
