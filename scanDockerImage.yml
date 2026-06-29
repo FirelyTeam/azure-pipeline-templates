@@ -41,8 +41,13 @@ jobs:
       value: $[ ne('${{ parameters.dockerhubRegistryConnection }}', '') ]
     - name: docker_image_full_name
       value: ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}
+    # Docker Scout matches a VEX statement's product @id against the image purl. For a
+    # registry-qualified image the purl is pkg:docker/<repo>@<tag>?repository_url=<registry-host>.
+    # The registry host is a `repository_url` qualifier, NOT part of the namespace path. Putting it
+    # in the path (pkg:docker/<registry>/<repo>@<tag>) makes the product unmatchable so no VEX
+    # statement is applied (see docker/scout-cli#207). Verified locally against a registry image.
     - name: docker_image_package_url
-      value: pkg:docker/${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}@${{ parameters.dockerImageRepoVersion }}
+      value: pkg:docker/${{ parameters.dockerImageRepoName }}@${{ parameters.dockerImageRepoVersion }}?repository_url=${{ parameters.dockerRegistryName }}
 
   steps:
   - checkout: self
@@ -86,8 +91,11 @@ jobs:
         echo "Installing Docker Scout CLI to ${install_dir}"
         curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s -- -b ${install_dir}
         FAILED=0
+        # --vex-author must match the author written by convertTrivyIgnoreToVex.yml (devops@fire.ly).
+        # Docker Scout only honours VEX statements from accepted authors (default: <.*@docker.com>),
+        # so without this flag our not_affected statements are read but never applied.
         echo "Get a CVE report for the base image"
-        docker scout cves --vex-location vex.json --only-base ${{ variables['docker_image_full_name'] }} --exit-code --only-severity critical,high,medium,low
+        docker scout cves --vex-location vex.json --vex-author devops@fire.ly --only-base ${{ variables['docker_image_full_name'] }} --exit-code --only-severity critical,high,medium,low
         if [ $? -ne 0 ]; then
           echo "Vulnerabilities found in packages installed in the base image"
           FAILED=1
@@ -95,7 +103,7 @@ jobs:
           echo "No vulnerabilities found in packages installed in the base image"
         fi
         echo "Get a CVE report for the built image (without considering CVE from base image)"
-        docker scout cves --vex-location vex.json --ignore-base ${{ variables['docker_image_full_name'] }} --exit-code --only-severity critical,high,medium,low
+        docker scout cves --vex-location vex.json --vex-author devops@fire.ly --ignore-base ${{ variables['docker_image_full_name'] }} --exit-code --only-severity critical,high,medium,low
         if [ $? -ne 0 ]; then
           echo "Vulnerabilities found in packages installed in the image"
           FAILED=1
