@@ -42,8 +42,8 @@ jobs:
     - name: docker_image_full_name
       value: ${{ parameters.dockerRegistryName }}/${{ parameters.dockerImageRepoName }}:${{ parameters.dockerImageRepoVersion }}
     # Docker Scout matches a VEX statement's product @id against the image purl. For a
-    # registry-qualified image the purl is pkg:docker/<repo>@<tag>?repository_url=<registry-host>:
-    # the registry host is a `repository_url` qualifier, NOT part of the namespace path. Putting it
+    # registry-qualified image the purl is pkg:docker/<repo>@<tag>?repository_url=<registry-host>.
+    # The registry host is a `repository_url` qualifier, NOT part of the namespace path. Putting it
     # in the path (pkg:docker/<registry>/<repo>@<tag>) makes the product unmatchable so no VEX
     # statement is applied (see docker/scout-cli#207). Verified locally against a registry image.
     - name: docker_image_package_url
