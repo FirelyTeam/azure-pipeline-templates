@@ -1,0 +1,103 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: purgeAcrBuildImages.yml
+#
+# Called on release from each product's release flow. Keeps the just-released minor plus
+# `keepMinors` previous minors (within the released major) of build images, and purges
+# everything older. The keep-window is anchored on the released version itself (parsed from
+# `version`), not on whatever happens to already be tagged - so it doesn't depend on the
+# just-pushed build tag having shown up yet in `az acr repository show-tags`. Other majors,
+# and non-build tags (latest, stable, clean X.Y.Z, etc.), are never touched.
+
+parameters:
+- name: dependsOn
+  type: object
+  default: []
+  displayName: 'The name of the job that this job depends on'
+- name: azureServiceConnection
+  type: string
+  default: 'FHIR Test buildserver'
+  displayName: 'Azure service connection with access to the ACR (az acr repository/run commands)'
+- name: registry
+  type: string
+  default: 'firely'
+  displayName: 'The name of the Azure Container Registry (not the login server FQDN)'
+- name: imageRepository
+  type: string
+  displayName: 'The ACR repository to purge, e.g. firely/server, firely/fsi, firely/auth'
+- name: version
+  type: string
+  displayName: 'The version that was just released, e.g. $(CurrentVersion) or $(Version)'
+- name: keepMinors
+  type: number
+  default: 1
+  displayName: 'Number of previous minors (below the released one, within the released major) to also keep'
+- name: dryRun
+  type: boolean
+  default: false
+  displayName: 'List tags that would be purged without deleting anything'
+- name: condition
+  type: string
+  default: 'succeeded()'
+  displayName: 'Job condition - override when the calling stage/pipeline has no release-only gate of its own'
+- name: jobVariables
+  type: object
+  default: {}
+  displayName: 'Extra job-level variables to merge in, e.g. to resolve a same-stage output variable via dependencies.<job>.outputs[...] when no stage-level version variable exists'
+
+jobs:
+- job: purgeAcrBuildImages
+  displayName: 'Purge superseded build images (${{ parameters.imageRepository }})'
+  dependsOn: ${{ parameters.dependsOn }}
+  condition: ${{ parameters.condition }}
+  pool:
+    vmImage: 'ubuntu-latest'
+  variables:
+    ${{ insert }}: ${{ parameters.jobVariables }}
+  steps:
+  - task: AzureCLI@2
+    displayName: 'Purge older minors of the released major'
+    inputs:
+      azureSubscription: ${{ parameters.azureServiceConnection }}
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        $registry = '${{ parameters.registry }}'
+        $repo     = '${{ parameters.imageRepository }}'
+        $version  = '${{ parameters.version }}'
+        $keep     = [int]'${{ parameters.keepMinors }}'
+        $dryRun   = [System.Convert]::ToBoolean('${{ parameters.dryRun }}')
+
+        if ($version -notmatch '^(\d+)\.(\d+)\.') { Write-Error "Bad version '$version'"; exit 1 }
+        $major = [int]$Matches[1]
+        $releasedMinor = [int]$Matches[2]
+        $minKeptMinor = $releasedMinor - $keep
+        Write-Host "Release $version -> cleaning major $major line in $repo (keep minor $releasedMinor and the $keep minor(s) below it, i.e. minor >= $minKeptMinor)"
+
+        $tags = az acr repository show-tags --name $registry --repository $repo --output tsv
+        if ($LASTEXITCODE -ne 0) { Write-Error "Failed to list tags for $repo"; exit 1 }
+
+        # Only build tags of the released major: <major>.<minor>.<patch>-build-...
+        $builds = foreach ($t in $tags) {
+          if ($t -match "^$major\.(\d+)\.(\d+)-build-") {
+            [pscustomobject]@{ Tag = $t; Minor = [int]$Matches[1] }
+          }
+        }
+        if (-not $builds) { Write-Host "No build tags for major $major"; exit 0 }
+
+        $toDelete = $builds | Where-Object { $_.Minor -lt $minKeptMinor }
+        Write-Host "keep: $($builds.Count - $toDelete.Count)  delete: $($toDelete.Count)"
+
+        foreach ($b in $toDelete) {
+          if ($dryRun) {
+            Write-Host "[DRY RUN] would untag ${repo}:$($b.Tag)"
+          } else {
+            az acr repository untag --name $registry --image "${repo}:$($b.Tag)" | Out-Null
+          }
+        }
+
+        if (-not $dryRun -and $toDelete.Count -gt 0) {
+          Write-Host "Purging orphaned manifests left behind by the untag..."
+          az acr run --registry $registry `
+            --cmd "mcr.microsoft.com/acr/acr-cli:0.16 purge --filter '${repo}:^`$' --untagged --ago 0d" `
+            /dev/null
+        }
