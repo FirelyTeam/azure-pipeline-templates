@@ -7,6 +7,15 @@
 # `version`), not on whatever happens to already be tagged - so it doesn't depend on the
 # just-pushed build tag having shown up yet in `az acr repository show-tags`. Other majors,
 # and non-build tags (latest, stable, clean X.Y.Z, etc.), are never touched.
+#
+# Usage:
+#   - template: purgeAcrBuildImages.yml@templates
+#     parameters:
+#       dependsOn: deployDockerHub
+#       azureServiceConnection: 'FHIR Test buildserver'
+#       imageRepository: $(FIRELY_SERVER_IMAGE_REPO_NAME)
+#       version: $(CurrentVersion)
+#       dryRun: true # first release after rollout - flip off once the keep/delete list is verified
 
 parameters:
 - name: dependsOn
@@ -15,7 +24,6 @@ parameters:
   displayName: 'The name of the job that this job depends on'
 - name: azureServiceConnection
   type: string
-  default: 'FHIR Test buildserver'
   displayName: 'Azure service connection with access to the ACR (az acr repository/run commands)'
 - name: registry
   type: string
@@ -67,13 +75,14 @@ jobs:
         $keep     = [int]'${{ parameters.keepMinors }}'
         $dryRun   = [System.Convert]::ToBoolean('${{ parameters.dryRun }}')
 
+        if ($keep -lt 0) { Write-Error "keepMinors must be >= 0, got $keep"; exit 1 }
         if ($version -notmatch '^(\d+)\.(\d+)\.') { Write-Error "Bad version '$version'"; exit 1 }
         $major = [int]$Matches[1]
         $releasedMinor = [int]$Matches[2]
         $minKeptMinor = $releasedMinor - $keep
         Write-Host "Release $version -> cleaning major $major line in $repo (keep minor $releasedMinor and the $keep minor(s) below it, i.e. minor >= $minKeptMinor)"
 
-        $tags = az acr repository show-tags --name $registry --repository $repo --output tsv
+        $tags = @(az acr repository show-tags --name $registry --repository $repo --output tsv)
         if ($LASTEXITCODE -ne 0) { Write-Error "Failed to list tags for $repo"; exit 1 }
 
         # Only build tags of the released major: <major>.<minor>.<patch>-build-...
@@ -92,12 +101,14 @@ jobs:
             Write-Host "[DRY RUN] would untag ${repo}:$($b.Tag)"
           } else {
             az acr repository untag --name $registry --image "${repo}:$($b.Tag)" | Out-Null
+            if ($LASTEXITCODE -ne 0) { Write-Error "Failed to untag ${repo}:$($b.Tag)"; exit 1 }
           }
         }
 
         if (-not $dryRun -and $toDelete.Count -gt 0) {
-          Write-Host "Purging orphaned manifests left behind by the untag..."
+          Write-Host "Purging manifests orphaned by the untag operation above..."
           az acr run --registry $registry `
             --cmd "mcr.microsoft.com/acr/acr-cli:0.16 purge --filter '${repo}:^`$' --untagged --ago 0d" `
             /dev/null
+          if ($LASTEXITCODE -ne 0) { Write-Error "Orphaned manifest purge failed for $repo"; exit 1 }
         }
