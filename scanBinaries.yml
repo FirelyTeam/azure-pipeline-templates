@@ -79,9 +79,22 @@ jobs:
         exitCode: '0'
         ignoredLicenses: ${{ parameters.licenseSbomIgnoredLicenses }}
         outputDir: $(Agent.TempDirectory)/trivy-sbom
+        # --exit-code 0 only suppresses the "findings" exit code - a genuine Trivy/Docker error (e.g. a
+        # transient pull failure) still exits non-zero. continueOnError keeps this strictly report-only.
+        continueOnError: true
+
+    - bash: |
+        if [ -f "$(Agent.TempDirectory)/trivy-sbom/sbom.json" ]; then
+          echo "##vso[task.setvariable variable=sbomFileExists]true"
+        else
+          echo "##vso[task.setvariable variable=sbomFileExists]false"
+        fi
+      displayName: Check license SBOM was generated
+      condition: succeededOrFailed()
 
     - task: PublishBuildArtifacts@1
       displayName: Publish license SBOM
+      condition: and(succeededOrFailed(), eq(variables['sbomFileExists'], 'true'))
       inputs:
         PathtoPublish: $(Agent.TempDirectory)/trivy-sbom/sbom.json
         ArtifactName: ${{ parameters.sbomArtifactName }}
