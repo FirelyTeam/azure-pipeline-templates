@@ -31,6 +31,18 @@ parameters:
   type: string
   default: ''
   displayName: 'The Docker Hub registry connection (required for scanning the image with docker scout)'
+- name: generateLicenseSbom
+  type: boolean
+  default: false
+  displayName: 'Also generate a CycloneDX SBOM (license scanner) and publish it as a build artifact. Never fails the build.'
+- name: licenseSbomIgnoredLicenses
+  type: string
+  default: ''
+  displayName: 'Comma-separated Trivy --ignored-licenses list for the SBOM scan (only used when generateLicenseSbom is true)'
+- name: sbomArtifactName
+  type: string
+  default: 'DockerImageSBOM'
+  displayName: 'Artifact name for the published SBOM (only used when generateLicenseSbom is true)'
 
 
 jobs:
@@ -122,6 +134,28 @@ jobs:
       trivyCacheStorageAccount: ${{ parameters.trivyCacheStorageAccount }}
       localTrivyCachePath: $(Agent.TempDirectory)/trivy-cache
       dockerhubRegistryConnection: ${{ parameters.dockerhubRegistryConnection }}
+
+  - ${{ if eq(parameters.generateLicenseSbom, true) }}:
+    - template: ./scanWithRetryTask.yml
+      parameters:
+        dockerExtraArguments: ""
+        trivyExtraArguments: "image ${{ variables['docker_image_full_name'] }} --output /mnt/trivy/output/sbom.json"
+        displayName: Generate license SBOM with Trivy
+        trivyCacheAzureSubscription: ${{ parameters.trivyCacheAzureSubscription }}
+        trivyCacheStorageAccount: ${{ parameters.trivyCacheStorageAccount }}
+        localTrivyCachePath: $(Agent.TempDirectory)/trivy-cache
+        dockerhubRegistryConnection: ${{ parameters.dockerhubRegistryConnection }}
+        scanners: license
+        format: cyclonedx
+        exitCode: '0'
+        ignoredLicenses: ${{ parameters.licenseSbomIgnoredLicenses }}
+        outputDir: $(Agent.TempDirectory)/trivy-sbom
+
+    - task: PublishBuildArtifacts@1
+      displayName: Publish license SBOM
+      inputs:
+        PathtoPublish: $(Agent.TempDirectory)/trivy-sbom/sbom.json
+        ArtifactName: ${{ parameters.sbomArtifactName }}
 
 #  The Trivy task does not work yet.
 #    - task: trivy@1

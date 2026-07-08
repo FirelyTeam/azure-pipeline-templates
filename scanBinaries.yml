@@ -21,6 +21,18 @@ parameters:
   type: string
   default: ''
   displayName: 'The Docker Hub registry connection (for authenticated pulls to avoid rate limits)'
+- name: generateLicenseSbom
+  type: boolean
+  default: false
+  displayName: 'Also generate a CycloneDX SBOM (license scanner) and publish it as a build artifact. Never fails the build.'
+- name: licenseSbomIgnoredLicenses
+  type: string
+  default: ''
+  displayName: 'Comma-separated Trivy --ignored-licenses list for the SBOM scan (only used when generateLicenseSbom is true)'
+- name: sbomArtifactName
+  type: string
+  default: 'BinariesSBOM'
+  displayName: 'Artifact name for the published SBOM (only used when generateLicenseSbom is true)'
 
 jobs:
 - job: scan  
@@ -51,3 +63,25 @@ jobs:
       trivyCacheStorageAccount: ${{ parameters.trivyCacheStorageAccount }}
       localTrivyCachePath: $(Agent.TempDirectory)/trivy-cache
       dockerhubRegistryConnection: ${{ parameters.dockerhubRegistryConnection }}
+
+  - ${{ if eq(parameters.generateLicenseSbom, true) }}:
+    - template: ./scanWithRetryTask.yml
+      parameters:
+        dockerExtraArguments: "-v $(System.DefaultWorkingDirectory)/Binaries:/src"
+        trivyExtraArguments: "filesystem /src --output /mnt/trivy/output/sbom.json"
+        displayName: Generate license SBOM with Trivy
+        trivyCacheAzureSubscription: ${{ parameters.trivyCacheAzureSubscription }}
+        trivyCacheStorageAccount: ${{ parameters.trivyCacheStorageAccount }}
+        localTrivyCachePath: $(Agent.TempDirectory)/trivy-cache
+        dockerhubRegistryConnection: ${{ parameters.dockerhubRegistryConnection }}
+        scanners: license
+        format: cyclonedx
+        exitCode: '0'
+        ignoredLicenses: ${{ parameters.licenseSbomIgnoredLicenses }}
+        outputDir: $(Agent.TempDirectory)/trivy-sbom
+
+    - task: PublishBuildArtifacts@1
+      displayName: Publish license SBOM
+      inputs:
+        PathtoPublish: $(Agent.TempDirectory)/trivy-sbom/sbom.json
+        ArtifactName: ${{ parameters.sbomArtifactName }}
