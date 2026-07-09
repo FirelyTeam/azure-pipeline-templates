@@ -27,8 +27,10 @@ parameters:
   default: 'Check for relevant file changes'
 - name: requiredPatterns
   type: object
+  default: []
   # List of PowerShell-style regex patterns. If at least one changed file matches at least one
-  # pattern, the job's `changed` output variable is set to 'true'.
+  # pattern, the job's `changed` output variable is set to 'true'. Empty (the default) means
+  # always 'true' - see the script's own "No requiredPatterns supplied" branch.
 - name: neverSkipRefPatterns
   type: object
   default:
