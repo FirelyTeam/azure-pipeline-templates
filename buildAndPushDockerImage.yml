@@ -33,6 +33,10 @@ parameters:
   type: string
   default: ''
   displayName: 'The Docker Hub registry connection (for authenticated pulls to avoid rate limits)'
+- name: generateSbom
+  type: boolean
+  default: false
+  displayName: 'Attach an SBOM + provenance attestation to the pushed image (docker buildx --sbom/--provenance). Retrievable via "docker buildx imagetools inspect" or "docker scout sbom".'
 
 jobs:
 - job: createDockerImage
@@ -75,12 +79,17 @@ jobs:
       docker run --privileged --rm tonistiigi/binfmt --install arm64
       docker run --privileged --rm tonistiigi/binfmt
       docker buildx create --use
-      if [ "${{ parameters.addLatestTag }}" = "True" ]; then 
+      attestArgs=""
+      if [ "${{ parameters.generateSbom }}" = "True" ]; then
+        attestArgs="--sbom=true --provenance=true"
+      fi
+      if [ "${{ parameters.addLatestTag }}" = "True" ]; then
         docker buildx build --platform linux/amd64,linux/arm64 \
           --build-arg=PUBLISHED_CODE=azuredevops \
           --tag ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:$(Build.BuildNumber) \
           --tag ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:latest \
           --push \
+          $attestArgs \
           --file ${{ parameters.dockerFile }} \
           $workingDir
       else
@@ -88,6 +97,7 @@ jobs:
           --build-arg=PUBLISHED_CODE=azuredevops \
           --tag ${{ parameters.dockerRegistry }}/${{ parameters.imageRepositoryName }}:$(Build.BuildNumber) \
           --push \
+          $attestArgs \
           --file ${{ parameters.dockerFile }} \
           $workingDir
       fi
