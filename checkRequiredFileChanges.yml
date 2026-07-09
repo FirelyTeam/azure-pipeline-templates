@@ -48,6 +48,9 @@ jobs:
   steps:
   - checkout: self
     fetchDepth: 0
+  - template: ./getChangedFiles.yml
+    parameters:
+      name: getChangedFiles
   - powershell: |
       $patterns = '${{ convertToJson(parameters.requiredPatterns) }}' | ConvertFrom-Json
       $neverSkipRefPatterns = '${{ convertToJson(parameters.neverSkipRefPatterns) }}' | ConvertFrom-Json
@@ -72,21 +75,7 @@ jobs:
       $patterns | ForEach-Object { Write-Host $_ }
       Write-Host "##[endgroup]"
 
-      if ($env:BUILD_REASON -eq 'PullRequest') {
-        # SYSTEM_PULLREQUEST_TARGETBRANCHNAME is the bare branch name (e.g. 'develop'), whereas
-        # SYSTEM_PULLREQUEST_TARGETBRANCH is the full ref which would yield an invalid
-        # 'origin/refs/heads/develop' ref.
-        Write-Host "PR build: diffing against origin/$env:SYSTEM_PULLREQUEST_TARGETBRANCHNAME"
-        $changedFiles = @(git diff --name-only "origin/$env:SYSTEM_PULLREQUEST_TARGETBRANCHNAME" | Where-Object { $_ })
-      }
-      else {
-        Write-Host "Branch build: diffing HEAD~1..HEAD"
-        $changedFiles = @(git diff --name-only HEAD~1 HEAD | Where-Object { $_ })
-      }
-
-      Write-Host "##[group]Changed files"
-      $changedFiles | ForEach-Object { Write-Host $_ }
-      Write-Host "##[endgroup]"
+      $changedFiles = @("$(getChangedFiles.changedFiles)" -split ';' | Where-Object { $_ })
 
       $changed = 'false'
       foreach ($file in $changedFiles) {
