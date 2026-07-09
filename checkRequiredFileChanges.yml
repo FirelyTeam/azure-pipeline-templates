@@ -1,0 +1,107 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: checkRequiredFileChanges.yml
+#
+# Reusable job that inspects the changed files in the current build and sets an output variable
+# indicating whether any of them match a supplied set of "required" patterns. Useful for gating an
+# expensive job (e.g. a dependency/license scan) so it only runs when a relevant file actually
+# changed. This is the inverse of check-skip-stage.yml's ignorePatterns (skip if ALL changed files
+# match) - this is "changed=true if ANY changed file matches".
+#
+# Usage:
+#   - template: checkRequiredFileChanges.yml@templates
+#     parameters:
+#       jobName: checkLicenseDependencyChanges
+#       requiredPatterns:
+#         - '\.csproj$'
+#
+#   - job: scanLicenses
+#     dependsOn: checkLicenseDependencyChanges
+#     condition: eq(dependencies.checkLicenseDependencyChanges.outputs['evaluateChanges.changed'], 'true')
+
+parameters:
+- name: jobName
+  type: string
+  default: 'checkRequiredFileChanges'
+- name: displayName
+  type: string
+  default: 'Check for relevant file changes'
+- name: requiredPatterns
+  type: object
+  # List of PowerShell-style regex patterns. If at least one changed file matches at least one
+  # pattern, the job's `changed` output variable is set to 'true'.
+- name: neverSkipRefPatterns
+  type: object
+  default:
+    - '^refs/tags/v.*$'
+  # Same semantics as check-skip-stage.yml: if the current build's ref matches any of these, the
+  # `changed` output is forced to 'true' regardless of which files changed. Pass an empty list to
+  # disable. Defaults to version tags so release builds always run the gated job.
+- name: vmImage
+  type: string
+  default: 'ubuntu-latest'
+
+jobs:
+- job: ${{ parameters.jobName }}
+  displayName: ${{ parameters.displayName }}
+  pool:
+    vmImage: ${{ parameters.vmImage }}
+  steps:
+  - checkout: self
+    fetchDepth: 0
+  - powershell: |
+      $patterns = '${{ convertToJson(parameters.requiredPatterns) }}' | ConvertFrom-Json
+      $neverSkipRefPatterns = '${{ convertToJson(parameters.neverSkipRefPatterns) }}' | ConvertFrom-Json
+
+      if ($neverSkipRefPatterns.Count -gt 0 -and $env:BUILD_SOURCEBRANCH) {
+        foreach ($refPattern in $neverSkipRefPatterns) {
+          if ($env:BUILD_SOURCEBRANCH -match $refPattern) {
+            Write-Host "Ref '$env:BUILD_SOURCEBRANCH' matches neverSkipRefPattern '$refPattern'; treating as changed."
+            Write-Host "##vso[task.setvariable variable=changed;isOutput=true]true"
+            exit 0
+          }
+        }
+      }
+
+      if ($patterns.Count -eq 0) {
+        Write-Host "No requiredPatterns supplied; changed is always 'true'."
+        Write-Host "##vso[task.setvariable variable=changed;isOutput=true]true"
+        exit 0
+      }
+
+      Write-Host "##[group]Required patterns"
+      $patterns | ForEach-Object { Write-Host $_ }
+      Write-Host "##[endgroup]"
+
+      if ($env:BUILD_REASON -eq 'PullRequest') {
+        # SYSTEM_PULLREQUEST_TARGETBRANCHNAME is the bare branch name (e.g. 'develop'), whereas
+        # SYSTEM_PULLREQUEST_TARGETBRANCH is the full ref which would yield an invalid
+        # 'origin/refs/heads/develop' ref.
+        Write-Host "PR build: diffing against origin/$env:SYSTEM_PULLREQUEST_TARGETBRANCHNAME"
+        $changedFiles = @(git diff --name-only "origin/$env:SYSTEM_PULLREQUEST_TARGETBRANCHNAME" | Where-Object { $_ })
+      }
+      else {
+        Write-Host "Branch build: diffing HEAD~1..HEAD"
+        $changedFiles = @(git diff --name-only HEAD~1 HEAD | Where-Object { $_ })
+      }
+
+      Write-Host "##[group]Changed files"
+      $changedFiles | ForEach-Object { Write-Host $_ }
+      Write-Host "##[endgroup]"
+
+      $changed = 'false'
+      foreach ($file in $changedFiles) {
+        foreach ($pattern in $patterns) {
+          if ($file -match $pattern) {
+            Write-Host "'$file' matches required pattern '$pattern'."
+            $changed = 'true'
+            break
+          }
+        }
+        if ($changed -eq 'true') { break }
+      }
+      if ($changed -eq 'false') {
+        Write-Host "No changed file matches any required pattern."
+      }
+      Write-Host "##vso[task.setvariable variable=changed;isOutput=true]$changed"
+    name: evaluateChanges
+    displayName: 'Evaluate required file changes'
