@@ -55,6 +55,26 @@ parameters:
   type: string
   default: ''
   displayName: 'Pipeline variable name to set to a semicolon-separated "CVE-ID|Library|Version|Severity" list when vulnerabilities are found'
+- name: scanners
+  type: string
+  default: 'vuln,misconfig,secret'
+  displayName: 'Comma-separated Trivy --scanners list (vuln, misconfig, secret, license)'
+- name: format
+  type: string
+  default: 'table'
+  displayName: 'Trivy --format value (table, json, cyclonedx, spdx-json, ...)'
+- name: exitCode
+  type: string
+  default: '1'
+  displayName: 'Trivy --exit-code value. Use 0 for non-blocking scans, e.g. license/SBOM reporting'
+- name: ignoredLicenses
+  type: string
+  default: ''
+  displayName: 'Comma-separated Trivy --ignored-licenses list (only relevant when scanners includes license)'
+- name: outputDir
+  type: string
+  default: ''
+  displayName: 'Host directory to mount for Trivy --output file writes (mounted read-write at /mnt/trivy/output in the container - reference that path in trivyExtraArguments, e.g. "--output /mnt/trivy/output/sbom.json")'
 
 steps:
 - ${{ if ne(parameters.dockerhubRegistryConnection, '') }}:
@@ -131,8 +151,19 @@ steps:
       echo "Local cache is not empty, running in offline mode."
       offlineTrivyArgs="--skip-db-update --skip-java-db-update --offline-scan --skip-check-update"
     fi
-    
-    command="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock $ignoreMountArgs $localCacheMountArgs ${{ parameters.dockerExtraArguments }} aquasec/trivy:0.69.3 $ignoreFileTrivyArgs $localCacheTrivyArgs $offlineTrivyArgs --exit-code 1 --format table --scanners vuln,misconfig,secret ${{ parameters.trivyExtraArguments }}"
+
+    outputMountArgs=""
+    if [ -n "${{ parameters.outputDir }}" ]; then
+      mkdir -p "${{ parameters.outputDir }}"
+      outputMountArgs="-v ${{ parameters.outputDir }}:/mnt/trivy/output"
+    fi
+
+    ignoredLicensesTrivyArgs=""
+    if [ -n "${{ parameters.ignoredLicenses }}" ]; then
+      ignoredLicensesTrivyArgs="--ignored-licenses ${{ parameters.ignoredLicenses }}"
+    fi
+
+    command="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock $ignoreMountArgs $localCacheMountArgs $outputMountArgs ${{ parameters.dockerExtraArguments }} aquasec/trivy:0.69.3 $ignoreFileTrivyArgs $localCacheTrivyArgs $offlineTrivyArgs --exit-code ${{ parameters.exitCode }} --format ${{ parameters.format }} --scanners ${{ parameters.scanners }} $ignoredLicensesTrivyArgs ${{ parameters.trivyExtraArguments }}"
     
     echo "Executing '$command' with retries..."
     while [ $count -lt $retries ]; do
