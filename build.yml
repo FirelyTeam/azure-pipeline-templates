@@ -59,7 +59,7 @@ parameters:
 - name: runTests
   type: boolean
   default: true
-  displayName: 'Whether to run dotnet test. Set to false for repos with no test project - a testProjects glob matching zero projects fails the test step with "Project file(s) matching the specified pattern were not found".'
+  displayName: 'Whether to include the dotnet test steps in the build. Set to false to omit them entirely (e.g. for repos with no test project), rather than relying on testProjects to glob-match zero projects, which is unreliable across MSBuild/task versions.'
 - name: checkForPrereleasePackages
   type: boolean
   default: false

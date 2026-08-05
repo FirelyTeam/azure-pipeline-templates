@@ -25,8 +25,8 @@ steps:
 
             foreach ($line in $packageRefLines) {
                 $tag = $line.Line
-                $nameMatch = [regex]::Match($tag, 'Include\s*=\s*"([^"]+)"')
-                $versionMatch = [regex]::Match($tag, 'Version\s*=\s*"([^"]+)"')
+                $nameMatch = [regex]::Match($tag, '(?:Include|Update)\s*=\s*"([^"]+)"')
+                $versionMatch = [regex]::Match($tag, '(?:VersionOverride|Version)\s*=\s*"([^"]+)"')
 
                 if (-not $nameMatch.Success -or -not $versionMatch.Success) {
                     continue
@@ -34,7 +34,7 @@ steps:
 
                 $packageName = $nameMatch.Groups[1].Value
                 $packageVersion = $versionMatch.Groups[1].Value
-                $isInternal = @($internalPackagePrefixes | Where-Object { $packageName.StartsWith($_) }).Count -gt 0
+                $isInternal = @($internalPackagePrefixes | Where-Object { $packageName.StartsWith($_, [System.StringComparison]::OrdinalIgnoreCase) }).Count -gt 0
                 $isPrerelease = $packageVersion -match '-'
 
                 if ($isInternal -and $isPrerelease) {
