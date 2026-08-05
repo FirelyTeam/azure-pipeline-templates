@@ -59,11 +59,15 @@ parameters:
 - name: runTests
   type: boolean
   default: true
-  displayName: 'Whether to include the dotnet test steps in the build. Set to false to omit them entirely (e.g. for repos with no test project), rather than relying on testProjects to glob-match zero projects, which is unreliable across MSBuild/task versions.'
+  displayName: 'If false, the dotnet test steps are left out of the job entirely. Use for repos with no test project: a testProjects glob matching nothing only warns and passes, so tests would silently never run.'
 - name: checkForPrereleasePackages
   type: boolean
   default: false
-  displayName: 'Whether to fail the build if any internal (Simplifier.*/Firely.*/Hl7.Fhir.*) PackageReference points at a prerelease version. Third-party prerelease dependencies are not affected.'
+  displayName: 'If true, fail the build when a PackageReference covered by prereleasePackagePrefixes points at a prerelease version'
+- name: prereleasePackagePrefixes
+  type: string
+  default: 'Simplifier.,Firely.,Hl7.Fhir'
+  displayName: 'Comma-separated package name prefixes the prerelease check applies to. Empty checks every package, including third-party ones.'
 - name: numberOfDaysRetainmentForReleaseBuild
   type: number
   default: 365 # number of days to retain the build
@@ -140,6 +144,8 @@ jobs:
 
   - ${{ if parameters.checkForPrereleasePackages }}:
     - template: check-for-prerelease-packages.yml
+      parameters:
+        packagePrefixes: ${{ parameters.prereleasePackagePrefixes }}
 
   ## retrieve the version suffix from the props file and set it as a variable
   - powershell: |
