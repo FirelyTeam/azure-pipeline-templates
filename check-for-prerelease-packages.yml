@@ -1,20 +1,46 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: check-for-prerelease-packages.yml
+#
+# Fails the build if any PackageReference to an internal Firely/Simplifier/HL7 FHIR
+# package (name prefix Simplifier., Firely. or Hl7.Fhir.) points at a prerelease
+# version (a version containing a hyphen, e.g. 6.0.0-alpha1). Third-party prerelease
+# dependencies (e.g. Console.Routing 3.1.0-beta5) are intentionally not flagged -
+# only an accidental prerelease pin on one of our own packages should block a
+# release build.
+#
+# Usage (included internally by build.yml when checkForPrereleasePackages: true;
+# can also be referenced directly):
+#   steps:
+#     - template: check-for-prerelease-packages.yml@templates
 
 steps:
   - powershell: |
-        $projectFiles = Get-ChildItem -Recurse -Filter "*.csproj"
+        $internalPackagePrefixes = @('Simplifier.', 'Firely.', 'Hl7.Fhir.')
+        $projectFiles = @(Get-ChildItem -Recurse -Filter "*.csproj")
         $hasPrerelease = $false
+
         foreach ($project in $projectFiles) {
             $content = Get-Content $project.FullName
-            $packageRefs = $content | Select-String -Pattern '<PackageReference.*Version=".*-.*"'
-            
-            if ($packageRefs) {
-                Write-Host "Prerelease packages found in $($project.Name)"
-                try{
-                    $packageRefs | ForEach-Object { Write-Host $_.Line.Trim() }
-                } catch {
-                    Write-Host "Error processing package references in $($project.Name): $_"
+            $packageRefLines = $content | Select-String -Pattern '<PackageReference\b[^>]*>'
+
+            foreach ($line in $packageRefLines) {
+                $tag = $line.Line
+                $nameMatch = [regex]::Match($tag, 'Include\s*=\s*"([^"]+)"')
+                $versionMatch = [regex]::Match($tag, 'Version\s*=\s*"([^"]+)"')
+
+                if (-not $nameMatch.Success -or -not $versionMatch.Success) {
+                    continue
                 }
-                $hasPrerelease = $true
+
+                $packageName = $nameMatch.Groups[1].Value
+                $packageVersion = $versionMatch.Groups[1].Value
+                $isInternal = @($internalPackagePrefixes | Where-Object { $packageName.StartsWith($_) }).Count -gt 0
+                $isPrerelease = $packageVersion -match '-'
+
+                if ($isInternal -and $isPrerelease) {
+                    Write-Host "Prerelease internal package found in $($project.Name): $packageName $packageVersion"
+                    $hasPrerelease = $true
+                }
             }
         }
 
@@ -22,8 +48,6 @@ steps:
             exit 1
         }
         else {
-            Write-Host "No pre-release packages found in project files."
+            Write-Host "No prerelease internal (Simplifier.*/Firely.*/Hl7.Fhir.*) packages found in project files."
         }
-    displayName: 'Check for pre-release packages in project files'
-
-  
+    displayName: 'Check for prerelease internal packages in project files'

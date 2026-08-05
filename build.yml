@@ -56,6 +56,14 @@ parameters:
 - name: testFilter
   type: string
   default: '' # filter for unit tests; all tests by default
+- name: runTests
+  type: boolean
+  default: true
+  displayName: 'Whether to run dotnet test. Set to false for repos with no test project - a testProjects glob matching zero projects fails the test step with "Project file(s) matching the specified pattern were not found".'
+- name: checkForPrereleasePackages
+  type: boolean
+  default: false
+  displayName: 'Whether to fail the build if any internal (Simplifier.*/Firely.*/Hl7.Fhir.*) PackageReference points at a prerelease version. Third-party prerelease dependencies are not affected.'
 - name: numberOfDaysRetainmentForReleaseBuild
   type: number
   default: 365 # number of days to retain the build
@@ -129,6 +137,9 @@ jobs:
 
   # Run pre-build steps
   - ${{ parameters.preBuildSteps }}
+
+  - ${{ if parameters.checkForPrereleasePackages }}:
+    - template: check-for-prerelease-packages.yml
 
   ## retrieve the version suffix from the props file and set it as a variable
   - powershell: |
@@ -237,21 +248,22 @@ jobs:
         # pipelines (deploy) can use resources.pipeline.build.runName as the image tag.
         Write-Host "##vso[build.updatebuildnumber]${versionPrefix}-$(Build.BuildNumber)"
 
-  - task: DotNetCoreCLI@2
-    displayName: 'dotnet test UnitTests with filter'
-    condition: and(succeeded(), ne('${{ parameters.testFilter }}', ''))
-    inputs:
-      command: test
-      projects: ${{ parameters.testProjects }}
-      arguments: '--configuration $(buildConfiguration) --no-restore  --no-build --filter ${{ parameters.testFilter }}'
+  - ${{ if parameters.runTests }}:
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet test UnitTests with filter'
+      condition: and(succeeded(), ne('${{ parameters.testFilter }}', ''))
+      inputs:
+        command: test
+        projects: ${{ parameters.testProjects }}
+        arguments: '--configuration $(buildConfiguration) --no-restore  --no-build --filter ${{ parameters.testFilter }}'
 
-  - task: DotNetCoreCLI@2
-    displayName: 'dotnet test UnitTests'
-    condition: and(succeeded(), eq('${{ parameters.testFilter }}', ''))
-    inputs:
-      command: test
-      projects: ${{ parameters.testProjects }}
-      arguments: '--configuration $(buildConfiguration) --no-restore  --no-build'
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet test UnitTests'
+      condition: and(succeeded(), eq('${{ parameters.testFilter }}', ''))
+      inputs:
+        command: test
+        projects: ${{ parameters.testProjects }}
+        arguments: '--configuration $(buildConfiguration) --no-restore  --no-build'
 
   - template: strongNameSigning.yml
     parameters:
