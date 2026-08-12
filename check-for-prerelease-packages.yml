@@ -1,29 +1,112 @@
+# Repo: FirelyTeam/azure-pipeline-templates
+# File: check-for-prerelease-packages.yml
+#
+# Fails the build if a PackageReference points at a prerelease version (a version
+# containing a hyphen, e.g. 6.0.0-alpha1). By default every package is checked, which
+# is the historical behaviour. Set packagePrefixes to restrict the check to your own
+# packages, so that legitimate third-party prerelease dependencies (e.g.
+# Console.Routing 3.1.0-beta5) don't block a release build while an accidental
+# prerelease pin on one of our own packages still does.
+#
+# Versions written as an MSBuild property reference (Version="$(SimplifierBclVersion)")
+# are resolved from the PropertyGroups of the repo's .props and .csproj files, so the
+# check still works in repos that centralise their dependency versions that way.
+#
+# Usage (included internally by build.yml when checkForPrereleasePackages: true;
+# can also be referenced directly):
+#   steps:
+#     - template: check-for-prerelease-packages.yml@templates
+#       parameters:
+#         packagePrefixes: 'Simplifier.,Firely.,Hl7.Fhir'
+
+parameters:
+- name: packagePrefixes
+  type: string
+  default: ''
+  displayName: 'Comma-separated package name prefixes to restrict the check to, e.g. "Simplifier.,Firely.,Hl7.Fhir". Empty (the default) checks every package.'
 
 steps:
   - powershell: |
-        $projectFiles = Get-ChildItem -Recurse -Filter "*.csproj"
-        $hasPrerelease = $false
-        foreach ($project in $projectFiles) {
-            $content = Get-Content $project.FullName
-            $packageRefs = $content | Select-String -Pattern '<PackageReference.*Version=".*-.*"'
-            
-            if ($packageRefs) {
-                Write-Host "Prerelease packages found in $($project.Name)"
-                try{
-                    $packageRefs | ForEach-Object { Write-Host $_.Line.Trim() }
-                } catch {
-                    Write-Host "Error processing package references in $($project.Name): $_"
+        [string]$prefixParam = '${{ parameters.packagePrefixes }}'
+        $packagePrefixes = @($prefixParam -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+        $scopeDescription = if ($packagePrefixes.Count -gt 0) { ($packagePrefixes -join '*/') + '*' } else { 'all' }
+
+        Write-Host "Checking for prerelease versions of $scopeDescription packages."
+
+        # Collect MSBuild properties so that Version="$(SomeVersion)" can be resolved.
+        # Later definitions win, which is close enough to MSBuild's own last-one-wins
+        # semantics for the purpose of spotting a prerelease pin.
+        $isGeneratedPath = { param($path) $path -match '[\\/](bin|obj)[\\/]' }
+
+        $propertyValues = @{}
+        $propertyFiles = @(Get-ChildItem -Recurse -Include '*.props', '*.targets', '*.csproj' |
+            Where-Object { -not (& $isGeneratedPath $_.FullName) })
+        foreach ($propertyFile in $propertyFiles) {
+            try {
+                $xml = [xml](Get-Content -Raw -LiteralPath $propertyFile.FullName)
+            } catch {
+                Write-Host "##[warning]Could not parse $($propertyFile.FullName) as XML, skipping property collection for it: $($_.Exception.Message)"
+                continue
+            }
+
+            foreach ($propertyGroup in @($xml.Project.PropertyGroup)) {
+                if ($null -eq $propertyGroup) { continue }
+                foreach ($property in @($propertyGroup.ChildNodes)) {
+                    if ($property.NodeType -eq 'Element') {
+                        $propertyValues[$property.LocalName] = $property.InnerText
+                    }
                 }
-                $hasPrerelease = $true
+            }
+        }
+
+        $hasPrerelease = $false
+        $projectFiles = @(Get-ChildItem -Recurse -Filter '*.csproj' |
+            Where-Object { -not (& $isGeneratedPath $_.FullName) })
+
+        foreach ($project in $projectFiles) {
+            $content = Get-Content -LiteralPath $project.FullName
+            $packageRefLines = $content | Select-String -Pattern '<PackageReference\b[^>]*>'
+
+            foreach ($line in $packageRefLines) {
+                $tag = $line.Line
+                $nameMatch = [regex]::Match($tag, '(?:Include|Update)\s*=\s*"([^"]+)"')
+                $versionMatch = [regex]::Match($tag, '(?:VersionOverride|Version)\s*=\s*"([^"]+)"')
+
+                if (-not $nameMatch.Success -or -not $versionMatch.Success) {
+                    continue
+                }
+
+                $packageName = $nameMatch.Groups[1].Value
+                $packageVersion = $versionMatch.Groups[1].Value
+
+                # Resolve a single level of $(Property) indirection.
+                $propertyReference = [regex]::Match($packageVersion, '^\s*\$\(([^)]+)\)\s*$')
+                if ($propertyReference.Success) {
+                    $propertyName = $propertyReference.Groups[1].Value
+                    if ($propertyValues.ContainsKey($propertyName)) {
+                        $packageVersion = $propertyValues[$propertyName]
+                    } else {
+                        Write-Host "##[warning]$($project.Name): could not resolve version property $propertyName for $packageName, skipping."
+                        continue
+                    }
+                }
+
+                $inScope = $packagePrefixes.Count -eq 0 -or
+                    @($packagePrefixes | Where-Object { $packageName.StartsWith($_, [System.StringComparison]::OrdinalIgnoreCase) }).Count -gt 0
+                $isPrerelease = $packageVersion -match '-'
+
+                if ($inScope -and $isPrerelease) {
+                    Write-Host "##[error]Prerelease package found in $($project.Name): $packageName $packageVersion"
+                    $hasPrerelease = $true
+                }
             }
         }
 
         if ($hasPrerelease) {
+            Write-Host "##[error]Release build blocked: one or more prerelease package references found (see above)."
             exit 1
         }
         else {
-            Write-Host "No pre-release packages found in project files."
+            Write-Host "No prerelease $scopeDescription packages found in project files."
         }
-    displayName: 'Check for pre-release packages in project files'
-
-  
+    displayName: 'Check for prerelease packages in project files'
