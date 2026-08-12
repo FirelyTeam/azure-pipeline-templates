@@ -94,12 +94,12 @@ steps:
     # Load the XML
     [xml]$xml = Get-Content $xmlFilePath
 
-    # Define the XML namespace (since the XML file has a namespace)
-    $namespace = New-Object Xml.XmlNamespaceManager($xml.NameTable)
-    $namespace.AddNamespace("msb", "http://schemas.microsoft.com/developer/msbuild/2003")
-
-    # Find the package property element and update it
-    $packageVersionNode = $xml.SelectSingleNode("//msb:PropertyGroup/msb:${{ parameters.packageProperty }}", $namespace)
+    # Find the package property element and update it.
+    # Match on local-name() so the XPath is namespace-agnostic: it works both for
+    # legacy .props files that declare the MSBuild 2003 namespace on <Project> and
+    # for SDK-style files (e.g. Directory.Packages.props under Central Package
+    # Management) that have no XML namespace.
+    $packageVersionNode = $xml.SelectSingleNode("//*[local-name()='PropertyGroup']/*[local-name()='${{ parameters.packageProperty }}']")
     if ($null -ne $packageVersionNode) {
         $packageVersionNode.InnerText = $packageVersion
         # Save the updated XML back to the file

@@ -77,7 +77,20 @@ and backwards-compatibility are paramount.
   `ref: refs/heads/feature/DEVOPS-XXX-...`) and running a real CI build.
   **Revert the ref to a tag before merging the consumer's PR.**
 - Once merged to `main`, retag (`git tag -f v1 main`) so consumers
-  pinned to `v1` pick up the change.
+  pinned to `v1` pick up the change. Follow the **archive-then-move**
+  convention: snapshot the current `v1` as the next `v1-old<N>` tag
+  (a rollback point) *before* force-moving `v1`, then push both:
+  ```sh
+  git tag v1-old<N> v1       # archive current v1 (use the next free N)
+  git tag -f v1 main         # move v1 to the merged commit
+  git push origin v1-old<N>
+  git push --force origin v1
+  ```
+  Find the next `N` with `git tag --list 'v1-old*' | sed 's/v1-old//' | sort -n | tail -1`.
+- **Retag deliberately.** `v1` may lag `main` by several PRs, so moving it
+  ships *every* change merged since the last retag — not just yours — to all
+  consumers at once. Confirm the full delta (`git log v1..main --oneline`)
+  before retagging.
 
 ## PowerShell inside templates
 
