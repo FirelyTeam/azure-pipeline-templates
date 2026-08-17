@@ -136,15 +136,23 @@ The agents run on Linux (`ubuntu-latest`) using PowerShell 7+.
   in PR builds — PRs from forks generally cannot access secrets.
 - **Don't** use backslashes in paths or glob patterns. Templates run on
   both `windows-latest` and `ubuntu-latest`, and forward slashes work on
-  both, while backslashes fail *silently* on Linux: `task-lib` only
-  normalises `\` to `/` on Windows, so minimatch reads `\` as an escape
-  character and a pattern like `**\*.csproj` matches **zero** files —
-  green build, empty artifact. In inline PowerShell, `\` is likewise a
-  literal character on Linux, not a separator, so `Get-ChildItem` finds
-  nothing. This bit `publish.yml`, `publish-plugin.yml` and `package.yml`
-  (DEVOPS-902). Where a native backslash really is required, branch on
-  the OS the way `push-nuget-package.yml` does:
+  both, while backslashes break on Linux: `task-lib` only normalises `\`
+  to `/` on Windows, so minimatch reads `\` as an escape character and a
+  pattern like `**\*.csproj` matches **zero** files. In inline PowerShell,
+  `\` is likewise a literal character on Linux, not a separator, so
+  `Get-ChildItem` finds nothing. This bit `publish.yml`,
+  `publish-plugin.yml` and `package.yml` (DEVOPS-902). Where a native
+  backslash really is required, branch on the OS the way
+  `push-nuget-package.yml` does:
   `if ($Env:AGENT_OS -eq "Windows_NT") {$sep = "\"} else {$sep = "/"}`.
+- **Know which zero-match failures are loud.** `DotNetCoreCLI@2` is not
+  consistent: with a `projects` glob that matches nothing, `publish`
+  **hard-fails** with `Project file(s) matching the specified pattern were
+  not found` (verified: frip build 77531, `publish.yml` on `ubuntu-latest`
+  against the unfixed `v1`), while `test` only warns and passes (verified:
+  Simplifier.Bcl build 76344 — the reason `runTests` exists on
+  `build.yml`). Assume nothing here: check the behaviour of the specific
+  command before relying on either a failure or a pass.
 
 ## Commit and PR style
 
