@@ -2,9 +2,10 @@
 # File: push-nuget-package.yml
 
 parameters:
-  artifact:            # The name of the artifact to download
-  source:              # NuGet Source, like https://nuget.pkg.github.com/FirelyTeam/index.json  
-  apiKey:              # The api key to be used for pushing packages to the NuGet server
+  artifact:                  # The name of the artifact to download
+  source:                    # NuGet Source, like https://nuget.pkg.github.com/FirelyTeam/index.json
+  apiKey: ''                 # The api key to be used for pushing packages to the NuGet server. Ignored if nuGetServiceConnection is set.
+  nuGetServiceConnection: '' # SPIKE (DEVOPS-903): name of an externalnugetfeed service connection with push scope. When set, NuGetAuthenticate@1 is used instead of apiKey, keeping the real credential off the command line.
 
 steps:
 - powershell: |
@@ -19,13 +20,28 @@ steps:
 - task: NuGetToolInstaller@1
   inputs:
     versionSpec: 5.x
-- task: DotNetCoreCLI@2
-  displayName: Push packages to NuGet server
-  inputs:
-    command: custom
-    custom: nuget
-    arguments: >
-      push $(Build.ArtifactStagingDirectory)$(PATH_SEPARATOR)${{ parameters.artifact }}$(PATH_SEPARATOR)*.nupkg
-      --source ${{ parameters.source }}
-      --api-key ${{ parameters.apiKey }}
-      --skip-duplicate
+- ${{ if ne(parameters.nuGetServiceConnection, '') }}:
+  - task: NuGetAuthenticate@1
+    inputs:
+      nuGetServiceConnections: ${{ parameters.nuGetServiceConnection }}
+  - task: DotNetCoreCLI@2
+    displayName: Push packages to NuGet server (via NuGetAuthenticate)
+    inputs:
+      command: custom
+      custom: nuget
+      arguments: >
+        push $(Build.ArtifactStagingDirectory)$(PATH_SEPARATOR)${{ parameters.artifact }}$(PATH_SEPARATOR)*.nupkg
+        --source ${{ parameters.source }}
+        --api-key ${{ parameters.nuGetServiceConnection }}
+        --skip-duplicate
+- ${{ else }}:
+  - task: DotNetCoreCLI@2
+    displayName: Push packages to NuGet server
+    inputs:
+      command: custom
+      custom: nuget
+      arguments: >
+        push $(Build.ArtifactStagingDirectory)$(PATH_SEPARATOR)${{ parameters.artifact }}$(PATH_SEPARATOR)*.nupkg
+        --source ${{ parameters.source }}
+        --api-key ${{ parameters.apiKey }}
+        --skip-duplicate
