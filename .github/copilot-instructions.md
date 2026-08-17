@@ -134,6 +134,17 @@ The agents run on Linux (`ubuntu-latest`) using PowerShell 7+.
 - **Don't** add a step that requires elevated permissions (e.g.
   `secureFile`, signed-package upload) to a template intended for use
   in PR builds — PRs from forks generally cannot access secrets.
+- **Don't** use backslashes in paths or glob patterns. Templates run on
+  both `windows-latest` and `ubuntu-latest`, and forward slashes work on
+  both, while backslashes fail *silently* on Linux: `task-lib` only
+  normalises `\` to `/` on Windows, so minimatch reads `\` as an escape
+  character and a pattern like `**\*.csproj` matches **zero** files —
+  green build, empty artifact. In inline PowerShell, `\` is likewise a
+  literal character on Linux, not a separator, so `Get-ChildItem` finds
+  nothing. This bit `publish.yml`, `publish-plugin.yml` and `package.yml`
+  (DEVOPS-902). Where a native backslash really is required, branch on
+  the OS the way `push-nuget-package.yml` does:
+  `if ($Env:AGENT_OS -eq "Windows_NT") {$sep = "\"} else {$sep = "/"}`.
 
 ## Commit and PR style
 

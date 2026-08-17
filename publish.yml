@@ -48,8 +48,8 @@ steps:
     publishWebProjects: ${{ parameters.publishWebProjects }}
     zipAfterPublish: ${{ parameters.zipAfterPublish }}
     projects: |
-     **\*.csproj
-     !**\*Tests.csproj
+     **/*.csproj
+     !**/*Tests.csproj
     arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release'
   condition: and(succeeded(), eq(variables.UseVersionSuffix, 'false'))
 
@@ -60,8 +60,8 @@ steps:
     publishWebProjects: ${{ parameters.publishWebProjects }}
     zipAfterPublish: ${{ parameters.zipAfterPublish }}
     projects: |
-      **\*.csproj
-      !**\*Tests.csproj
+      **/*.csproj
+      !**/*Tests.csproj
     arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release --version-suffix $(VersionSuffix)'
   condition: and(succeeded(), eq(variables.UseVersionSuffix, 'true'))
     
