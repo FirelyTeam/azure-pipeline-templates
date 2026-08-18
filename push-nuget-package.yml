@@ -2,10 +2,9 @@
 # File: push-nuget-package.yml
 
 parameters:
-  artifact:                  # The name of the artifact to download
-  source:                    # NuGet Source, like https://nuget.pkg.github.com/FirelyTeam/index.json
-  apiKey: ''                 # The api key to be used for pushing packages to the NuGet server. Ignored if nuGetServiceConnection is set.
-  nuGetServiceConnection: '' # Name of an externalnugetfeed service connection with push scope (e.g. GitHub Packages). When set, NuGetAuthenticate@1 is used instead of apiKey, keeping the real credential off the command line. Ignored/unused if left blank (default, backwards-compatible).
+  artifact:  # The name of the artifact to download
+  source:    # NuGet Source, like https://nuget.pkg.github.com/FirelyTeam/index.json
+  apiKey: '' # The api key to be used for pushing packages to the NuGet server. Passed via the NUGET_API_KEY environment variable so it never appears as a literal command-line argument (DEVOPS-903/DEVOPS-849).
 
 steps:
 - powershell: |
@@ -20,28 +19,14 @@ steps:
 - task: NuGetToolInstaller@1
   inputs:
     versionSpec: 5.x
-- ${{ if ne(parameters.nuGetServiceConnection, '') }}:
-  - task: NuGetAuthenticate@1
-    inputs:
-      nuGetServiceConnections: ${{ parameters.nuGetServiceConnection }}
-  - task: DotNetCoreCLI@2
-    displayName: Push packages to NuGet server (via NuGetAuthenticate)
-    inputs:
-      command: custom
-      custom: nuget
-      arguments: >
-        push $(Build.ArtifactStagingDirectory)$(PATH_SEPARATOR)${{ parameters.artifact }}$(PATH_SEPARATOR)*.nupkg
-        --source ${{ parameters.source }}
-        --api-key NuGetAuthenticate
-        --skip-duplicate
-- ${{ else }}:
-  - task: DotNetCoreCLI@2
-    displayName: Push packages to NuGet server
-    inputs:
-      command: custom
-      custom: nuget
-      arguments: >
-        push $(Build.ArtifactStagingDirectory)$(PATH_SEPARATOR)${{ parameters.artifact }}$(PATH_SEPARATOR)*.nupkg
-        --source ${{ parameters.source }}
-        --api-key ${{ parameters.apiKey }}
-        --skip-duplicate
+- task: DotNetCoreCLI@2
+  displayName: Push packages to NuGet server
+  env:
+    NUGET_API_KEY: ${{ parameters.apiKey }} # read by dotnet nuget push (NuGet.Client 7.6+) when --api-key is omitted, keeping the secret out of the process command line
+  inputs:
+    command: custom
+    custom: nuget
+    arguments: >
+      push $(Build.ArtifactStagingDirectory)$(PATH_SEPARATOR)${{ parameters.artifact }}$(PATH_SEPARATOR)*.nupkg
+      --source ${{ parameters.source }}
+      --skip-duplicate
