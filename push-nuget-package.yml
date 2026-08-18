@@ -2,9 +2,10 @@
 # File: push-nuget-package.yml
 
 parameters:
-  artifact:  # The name of the artifact to download
-  source:    # NuGet Source, like https://nuget.pkg.github.com/FirelyTeam/index.json
-  apiKey: '' # The api key to be used for pushing packages to the NuGet server. Passed via the NUGET_API_KEY environment variable so it never appears as a literal command-line argument (DEVOPS-903/DEVOPS-849).
+  artifact:              # The name of the artifact to download
+  source:                # NuGet Source, like https://nuget.pkg.github.com/FirelyTeam/index.json
+  apiKey: ''             # The api key to be used for pushing packages to the NuGet server. Passed via the NUGET_API_KEY environment variable so it never appears as a literal command-line argument (DEVOPS-903/DEVOPS-849).
+  dotnetVersion: '10.x'  # .NET SDK version used to run the push, pinned independently of the consumer's own SDK/global.json. Must bundle NuGet.Client >= 7.6 (the version that added NUGET_API_KEY environment variable support).
 
 steps:
 - powershell: |
@@ -16,9 +17,14 @@ steps:
     source: current
     artifact: ${{ parameters.artifact }}
     path: $(Build.ArtifactStagingDirectory)$(PATH_SEPARATOR)${{ parameters.artifact }}
-- task: NuGetToolInstaller@1
+- task: UseDotNet@2
+  displayName: Use pinned .NET SDK for NuGet push
   inputs:
-    versionSpec: 5.x
+    packageType: sdk
+    version: ${{ parameters.dotnetVersion }}
+    # useGlobalJson is intentionally left at its default (false): a global.json in the consumer's
+    # repo must not be able to redirect this step to an older SDK/NuGet client that doesn't
+    # support NUGET_API_KEY (see below).
 - task: DotNetCoreCLI@2
   displayName: Push packages to NuGet server
   env:
@@ -26,7 +32,10 @@ steps:
   inputs:
     command: custom
     custom: nuget
+    # Run from the downloaded-artifact folder, not the default source checkout root, so that any
+    # global.json committed in the consumer's repo cannot override the SDK pinned above for this step.
+    workingDirectory: $(Build.ArtifactStagingDirectory)$(PATH_SEPARATOR)${{ parameters.artifact }}
     arguments: >
-      push $(Build.ArtifactStagingDirectory)$(PATH_SEPARATOR)${{ parameters.artifact }}$(PATH_SEPARATOR)*.nupkg
+      push *.nupkg
       --source ${{ parameters.source }}
       --skip-duplicate
