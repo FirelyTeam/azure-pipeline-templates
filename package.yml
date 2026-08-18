@@ -88,7 +88,7 @@ steps:
       parameters:
         certificateValue: ${{ parameters.codeSignerCertificate }}
         certificatePasswordValue: ${{ parameters.codeSignerPassword }}
-        packagePaths: $(Build.ArtifactStagingDirectory)\packages\*.nupkg
+        packagePaths: $(Build.ArtifactStagingDirectory)/packages/*.nupkg
   - ${{ elseif parameters.trustedSigningAccountEndpoint }}: # Only sign if Trusted Signing endpoint is provided
     - template: codesign-nuget-package-using-trusted-signing.yml
       parameters:
@@ -96,7 +96,7 @@ steps:
         trustedSigningAccountEndpoint: ${{ parameters.trustedSigningAccountEndpoint }}
         trustedSigningAccountName: ${{ parameters.trustedSigningAccountName }}
         certificateProfileName: ${{ parameters.certificateProfileName }}
-        packagePaths: $(Build.ArtifactStagingDirectory)\packages\*.nupkg
+        packagePaths: $(Build.ArtifactStagingDirectory)/packages/*.nupkg
   - task: PublishBuildArtifacts@1
     displayName: 'Publish Artifact'
     inputs:

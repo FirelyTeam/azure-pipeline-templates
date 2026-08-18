@@ -32,8 +32,8 @@ jobs:
       publishWebProjects: false
       zipAfterPublish: false
       projects: |
-       **\*.csproj
-       !**\*Tests.csproj
+       **/*.csproj
+       !**/*Tests.csproj
       ${{ if eq(parameters.restoreDependencies, 'true') }}:
         # dependencies have been restored in one of the previous steps
         arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release --version-suffix $(build.buildNumber) --no-restore'
@@ -48,8 +48,8 @@ jobs:
       publishWebProjects: false
       zipAfterPublish: false
       projects: |
-       **\*.csproj
-       !**\*Tests.csproj
+       **/*.csproj
+       !**/*Tests.csproj
       ${{ if eq(parameters.restoreDependencies, 'true') }}:
         # dependencies have been restored in one of the previous steps
         arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release --no-restore'
