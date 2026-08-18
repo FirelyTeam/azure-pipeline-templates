@@ -5,7 +5,7 @@ parameters:
   artifact:                  # The name of the artifact to download
   source:                    # NuGet Source, like https://nuget.pkg.github.com/FirelyTeam/index.json
   apiKey: ''                 # The api key to be used for pushing packages to the NuGet server. Ignored if nuGetServiceConnection is set.
-  nuGetServiceConnection: '' # SPIKE (DEVOPS-903): name of an externalnugetfeed service connection with push scope. When set, NuGetAuthenticate@1 is used instead of apiKey, keeping the real credential off the command line.
+  nuGetServiceConnection: '' # Name of an externalnugetfeed service connection with push scope (e.g. GitHub Packages). When set, NuGetAuthenticate@1 is used instead of apiKey, keeping the real credential off the command line. Ignored/unused if left blank (default, backwards-compatible).
 
 steps:
 - powershell: |
