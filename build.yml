@@ -42,6 +42,15 @@ parameters:
 - name: zipAfterPublish
   type: boolean
   default: false # if true, the published artifacts will be zipped
+- name: publishProjects
+  type: string
+  # Newline-separated glob list selecting which projects `dotnet publish` runs on. Defaults to
+  # every non-test project, which is the historical behaviour. Pass a single project path when
+  # the repository has several non-test projects but ships only one of them -- see the comment
+  # on the same parameter in publish.yml for what goes wrong otherwise.
+  default: |
+    **/*.csproj
+    !**/*Tests.csproj
 - name: checkoutSubmodules
   type: string
   default: 'false'
@@ -298,6 +307,7 @@ jobs:
         useVersionSuffix: ${{ parameters.useVersionSuffix }}
         publishWebProjects: ${{ parameters.publishWebProjects }}
         zipAfterPublish: ${{ parameters.zipAfterPublish }}
+        publishProjects: ${{ parameters.publishProjects }}
         versionSuffix: $(VersionSuffix)
 
   # Retain the build if it is a release build
