@@ -32,7 +32,7 @@ steps:
       arguments: >
         push $(Build.ArtifactStagingDirectory)$(PATH_SEPARATOR)${{ parameters.artifact }}$(PATH_SEPARATOR)*.nupkg
         --source ${{ parameters.source }}
-        --api-key ${{ parameters.nuGetServiceConnection }}
+        --api-key NuGetAuthenticate
         --skip-duplicate
 - ${{ else }}:
   - task: DotNetCoreCLI@2
