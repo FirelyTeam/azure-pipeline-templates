@@ -7,6 +7,20 @@ parameters:
   publishWebProjects: false
   zipAfterPublish: false
   versionSuffix: ''
+  # Which projects `dotnet publish` selects, as a newline-separated glob list. The default is the
+  # historical behaviour -- every project except test projects -- so existing callers are
+  # unaffected.
+  #
+  # Override it when a repository has more than one non-test project but only one of them is the
+  # thing being shipped. The task publishes each matched project independently and, with
+  # zipAfterPublish, produces one zip per project directory; when one of those projects is a
+  # ProjectReference of another, the same assembly ends up in two zips. Consumers that extract
+  # them into a single folder (buildAndPushDockerImage.yml, scanBinaries.yml) then fail on the
+  # duplicate, because ExtractFiles@1 runs `unzip` with no stdin to answer its overwrite prompt.
+  # Naming the entry-point project avoids producing the redundant zip in the first place.
+  publishProjects: |
+    **/*.csproj
+    !**/*Tests.csproj
 
 steps:
 - powershell: |
@@ -47,9 +61,7 @@ steps:
     command: publish
     publishWebProjects: ${{ parameters.publishWebProjects }}
     zipAfterPublish: ${{ parameters.zipAfterPublish }}
-    projects: |
-     **/*.csproj
-     !**/*Tests.csproj
+    projects: ${{ parameters.publishProjects }}
     arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release'
   condition: and(succeeded(), eq(variables.UseVersionSuffix, 'false'))
 
@@ -59,9 +71,7 @@ steps:
     command: publish
     publishWebProjects: ${{ parameters.publishWebProjects }}
     zipAfterPublish: ${{ parameters.zipAfterPublish }}
-    projects: |
-      **/*.csproj
-      !**/*Tests.csproj
+    projects: ${{ parameters.publishProjects }}
     arguments: '-o $(Build.ArtifactStagingDirectory)/plugin_output -c Release --version-suffix $(VersionSuffix)'
   condition: and(succeeded(), eq(variables.UseVersionSuffix, 'true'))
     
