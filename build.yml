@@ -274,7 +274,7 @@ jobs:
       inputs:
         command: test
         projects: ${{ parameters.testProjects }}
-        arguments: '--configuration $(buildConfiguration) --no-restore  --no-build --filter ${{ parameters.testFilter }} --logger trx --results-directory $(Agent.TempDirectory)/TestResults'
+        arguments: '--configuration $(buildConfiguration) --no-restore  --no-build --filter ${{ parameters.testFilter }} --logger trx --results-directory "$(Agent.TempDirectory)/TestResults"'
         publishTestResults: false
 
     - task: DotNetCoreCLI@2
@@ -283,7 +283,7 @@ jobs:
       inputs:
         command: test
         projects: ${{ parameters.testProjects }}
-        arguments: '--configuration $(buildConfiguration) --no-restore  --no-build --logger trx --results-directory $(Agent.TempDirectory)/TestResults'
+        arguments: '--configuration $(buildConfiguration) --no-restore  --no-build --logger trx --results-directory "$(Agent.TempDirectory)/TestResults"'
         publishTestResults: false
 
     # A testProjects glob matching nothing produces zero .trx files here: DotNetCoreCLI@2 test only
