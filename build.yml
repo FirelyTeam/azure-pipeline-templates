@@ -72,7 +72,7 @@ parameters:
 - name: failOnNoTests
   type: boolean
   default: true
-  displayName: 'If true (default), fail the build when testProjects matches no project files instead of silently skipping tests -- DotNetCoreCLI@2 test only warns on a zero-match glob and still reports success. Set to false for a repo that genuinely has no test project.'
+  displayName: 'If true (default), fail the build when the dotnet test step produces no test results (e.g. testProjects matches no project files) instead of silently skipping tests -- DotNetCoreCLI@2 test only warns on a zero-match glob and still reports success. Set to false for a repo that genuinely has no test project.'
 - name: checkForPrereleasePackages
   type: boolean
   default: false
@@ -159,61 +159,6 @@ jobs:
     - template: check-for-prerelease-packages.yml
       parameters:
         packagePrefixes: ${{ parameters.prereleasePackagePrefixes }}
-
-  - ${{ if and(parameters.runTests, parameters.failOnNoTests) }}:
-    - task: PowerShell@2
-      displayName: 'Verify testProjects matches at least one project'
-      inputs:
-        failOnStderr: true
-        targetType: 'inline'
-        script: |
-          # Translate a testProjects glob segment-by-segment into a regex, so the check reflects
-          # the same directory structure the glob actually constrains -- not just the file name.
-          function Convert-GlobToRegex([string]$glob) {
-            $g = $glob -replace '\\', '/'
-            $sb = New-Object System.Text.StringBuilder
-            $i = 0
-            while ($i -lt $g.Length) {
-              if ($i -le $g.Length - 3 -and $g.Substring($i, 3) -eq '**/') {
-                [void]$sb.Append('(?:.*/)?')
-                $i += 3
-              }
-              elseif ($i -le $g.Length - 2 -and $g.Substring($i, 2) -eq '**') {
-                [void]$sb.Append('.*')
-                $i += 2
-              }
-              elseif ($g[$i] -eq '*') {
-                [void]$sb.Append('[^/]*')
-                $i += 1
-              }
-              elseif ($g[$i] -eq '?') {
-                [void]$sb.Append('[^/]')
-                $i += 1
-              }
-              else {
-                [void]$sb.Append([regex]::Escape([string]$g[$i]))
-                $i += 1
-              }
-            }
-            return '^' + $sb.ToString() + '$'
-          }
-
-          $root = (Get-Location).Path -replace '\\', '/'
-          $files = @(Get-ChildItem -Recurse -File -Include '*.csproj', '*.fsproj', '*.vbproj' | ForEach-Object {
-            ($_.FullName -replace '\\', '/') -replace [regex]::Escape($root + '/'), ''
-          })
-
-          $patterns = @('${{ parameters.testProjects }}' -split '[\r\n;]+' | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('!') })
-          $regexes = @($patterns | ForEach-Object { Convert-GlobToRegex $_ })
-
-          $matched = @($files | Where-Object { $f = $_; @($regexes | Where-Object { $f -match $_ }).Count -gt 0 })
-
-          if ($matched.Count -eq 0) {
-            Write-Error "testProjects ('${{ parameters.testProjects }}') matched no project files -- tests would silently be skipped. Fix the glob, or set failOnNoTests: false if this repo genuinely has no tests."
-            exit 1
-          }
-
-          Write-Host "testProjects matched $($matched.Count) file(s): $($matched -join ', ')"
 
   ## retrieve the version suffix from the props file and set it as a variable
   - powershell: |
@@ -329,7 +274,8 @@ jobs:
       inputs:
         command: test
         projects: ${{ parameters.testProjects }}
-        arguments: '--configuration $(buildConfiguration) --no-restore  --no-build --filter ${{ parameters.testFilter }}'
+        arguments: '--configuration $(buildConfiguration) --no-restore  --no-build --filter ${{ parameters.testFilter }} --logger trx --results-directory $(Agent.TempDirectory)/TestResults'
+        publishTestResults: false
 
     - task: DotNetCoreCLI@2
       displayName: 'dotnet test UnitTests'
@@ -337,7 +283,22 @@ jobs:
       inputs:
         command: test
         projects: ${{ parameters.testProjects }}
-        arguments: '--configuration $(buildConfiguration) --no-restore  --no-build'
+        arguments: '--configuration $(buildConfiguration) --no-restore  --no-build --logger trx --results-directory $(Agent.TempDirectory)/TestResults'
+        publishTestResults: false
+
+    # A testProjects glob matching nothing produces zero .trx files here: DotNetCoreCLI@2 test only
+    # warns on a zero-match glob and still reports success, so this step -- not the test task itself
+    # -- is what turns that into a build failure. Outcome-based (did dotnet test actually produce
+    # results?) rather than trying to reimplement the task's own glob/minimatch resolution.
+    - task: PublishTestResults@2
+      displayName: 'Publish test results'
+      condition: succeededOrFailed()
+      inputs:
+        testResultsFormat: 'VSTest'
+        testResultsFiles: '**/*.trx'
+        searchFolder: '$(Agent.TempDirectory)/TestResults'
+        mergeTestResults: true
+        failTaskOnMissingResultsFile: ${{ parameters.failOnNoTests }}
 
   - template: strongNameSigning.yml
     parameters:
