@@ -68,7 +68,11 @@ parameters:
 - name: runTests
   type: boolean
   default: true
-  displayName: 'If false, the dotnet test steps are left out of the job entirely. Use for repos with no test project: a testProjects glob matching nothing only warns and passes, so tests would silently never run.'
+  displayName: 'If false, the dotnet test steps are left out of the job entirely. Use for repos with no test project.'
+- name: failOnNoTests
+  type: boolean
+  default: true
+  displayName: 'If true (default), fail the build when the dotnet test step produces no test results (e.g. testProjects matches no project files) instead of silently skipping tests -- DotNetCoreCLI@2 test only warns on a zero-match glob and still reports success. Set to false for a repo that genuinely has no test project.'
 - name: checkForPrereleasePackages
   type: boolean
   default: false
@@ -270,7 +274,8 @@ jobs:
       inputs:
         command: test
         projects: ${{ parameters.testProjects }}
-        arguments: '--configuration $(buildConfiguration) --no-restore  --no-build --filter ${{ parameters.testFilter }}'
+        arguments: '--configuration $(buildConfiguration) --no-restore  --no-build --filter ${{ parameters.testFilter }} --logger trx --results-directory "$(Agent.TempDirectory)/TestResults"'
+        publishTestResults: false
 
     - task: DotNetCoreCLI@2
       displayName: 'dotnet test UnitTests'
@@ -278,7 +283,22 @@ jobs:
       inputs:
         command: test
         projects: ${{ parameters.testProjects }}
-        arguments: '--configuration $(buildConfiguration) --no-restore  --no-build'
+        arguments: '--configuration $(buildConfiguration) --no-restore  --no-build --logger trx --results-directory "$(Agent.TempDirectory)/TestResults"'
+        publishTestResults: false
+
+    # A testProjects glob matching nothing produces zero .trx files here: DotNetCoreCLI@2 test only
+    # warns on a zero-match glob and still reports success, so this step -- not the test task itself
+    # -- is what turns that into a build failure. Outcome-based (did dotnet test actually produce
+    # results?) rather than trying to reimplement the task's own glob/minimatch resolution.
+    - task: PublishTestResults@2
+      displayName: 'Publish test results'
+      condition: succeededOrFailed()
+      inputs:
+        testResultsFormat: 'VSTest'
+        testResultsFiles: '**/*.trx'
+        searchFolder: '$(Agent.TempDirectory)/TestResults'
+        mergeTestResults: true
+        failTaskOnMissingResultsFile: ${{ parameters.failOnNoTests }}
 
   - template: strongNameSigning.yml
     parameters:
