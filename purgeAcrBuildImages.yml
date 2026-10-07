@@ -107,7 +107,9 @@ jobs:
 
         if (-not $dryRun -and $toDelete.Count -gt 0) {
           Write-Host "Purging manifests orphaned by the untag operation above..."
-          az acr run --registry $registry `
+          # acr-cli inspects every manifest in the repo; on firely/server and firely/fsi that exceeds
+          # the 600s default ACR task timeout (dry runs took ~12 and ~17 minutes).
+          az acr run --registry $registry --timeout 3600 `
             --cmd "mcr.microsoft.com/acr/acr-cli:0.16 purge --filter '${repo}:^`$' --untagged --ago 0d" `
             /dev/null
           if ($LASTEXITCODE -ne 0) { Write-Error "Orphaned manifest purge failed for $repo"; exit 1 }
