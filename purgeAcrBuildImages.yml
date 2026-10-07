@@ -57,6 +57,7 @@ jobs:
   displayName: 'Purge superseded build images (${{ parameters.imageRepository }})'
   dependsOn: ${{ parameters.dependsOn }}
   condition: ${{ parameters.condition }}
+  timeoutInMinutes: 150 # must exceed the az acr run --timeout below
   pool:
     vmImage: 'ubuntu-latest'
   variables:
@@ -107,9 +108,9 @@ jobs:
 
         if (-not $dryRun -and $toDelete.Count -gt 0) {
           Write-Host "Purging manifests orphaned by the untag operation above..."
-          # acr-cli inspects every manifest in the repo; on firely/server and firely/fsi that exceeds
-          # the 600s default ACR task timeout (dry runs took ~12 and ~17 minutes).
-          az acr run --registry $registry --timeout 3600 `
+          # acr-cli inspects every manifest in the repo before deleting; on firely/server a dry run took ~12 minutes and deleting ~6200 manifests took 55 minutes, far beyond the 600s
+          # default ACR task timeout.
+          az acr run --registry $registry --timeout 7200 `
             --cmd "mcr.microsoft.com/acr/acr-cli:0.16 purge --filter '${repo}:^`$' --untagged --ago 0d" `
             /dev/null
           if ($LASTEXITCODE -ne 0) { Write-Error "Orphaned manifest purge failed for $repo"; exit 1 }
