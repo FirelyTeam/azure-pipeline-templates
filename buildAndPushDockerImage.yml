@@ -37,6 +37,10 @@ parameters:
   type: boolean
   default: false
   displayName: 'Attach an SBOM + provenance attestation to the pushed image (docker buildx --sbom/--provenance). Retrievable via "docker buildx imagetools inspect" or "docker scout sbom".'
+- name: buildTag
+  type: string
+  default: ''
+  displayName: 'Build tag added to the pipeline run once the image is pushed, so downstream pipelines can filter on runs that have an image (pipeline resource "tags"). If empty, no tag is added.'
 
 jobs:
 - job: createDockerImage
@@ -102,3 +106,6 @@ jobs:
           $workingDir
       fi
     displayName: 'Build and Push Docker image on ${{ parameters.dockerRegistry }}'
+  - ${{ if ne(parameters.buildTag, '') }}:
+    - bash: echo "##vso[build.addbuildtag]${{ parameters.buildTag }}"
+      displayName: 'Add build tag ${{ parameters.buildTag }}'
