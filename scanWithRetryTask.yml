@@ -163,7 +163,7 @@ steps:
       ignoredLicensesTrivyArgs="--ignored-licenses ${{ parameters.ignoredLicenses }}"
     fi
 
-    command="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock $ignoreMountArgs $localCacheMountArgs $outputMountArgs ${{ parameters.dockerExtraArguments }} aquasec/trivy:0.69.3 $ignoreFileTrivyArgs $localCacheTrivyArgs $offlineTrivyArgs --exit-code ${{ parameters.exitCode }} --format ${{ parameters.format }} --scanners ${{ parameters.scanners }} $ignoredLicensesTrivyArgs ${{ parameters.trivyExtraArguments }}"
+    command="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock $ignoreMountArgs $localCacheMountArgs $outputMountArgs ${{ parameters.dockerExtraArguments }} aquasec/trivy:0.76.2 $ignoreFileTrivyArgs $localCacheTrivyArgs $offlineTrivyArgs --exit-code ${{ parameters.exitCode }} --format ${{ parameters.format }} --scanners ${{ parameters.scanners }} $ignoredLicensesTrivyArgs ${{ parameters.trivyExtraArguments }}"
     
     echo "Executing '$command' with retries..."
     while [ $count -lt $retries ]; do
