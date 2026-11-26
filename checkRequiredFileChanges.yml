@@ -77,13 +77,14 @@ jobs:
       $patterns | ForEach-Object { Write-Host $_ }
       Write-Host "##[endgroup]"
 
-      $changedFiles = @("$(getChangedFiles.changedFiles)" -split ';' | Where-Object { $_ })
+      $changedFiles = @(Get-Content -LiteralPath "$(getChangedFiles.changedFilesPath)" -Encoding UTF8 | Where-Object { $_ })
 
       $changed = 'false'
       foreach ($file in $changedFiles) {
         foreach ($pattern in $patterns) {
           if ($file -match $pattern) {
-            Write-Host "'$file' matches required pattern '$pattern'."
+            $safeFile = $file -replace '##vso\[', '##vso_['
+            Write-Host "'$safeFile' matches required pattern '$pattern'."
             $changed = 'true'
             break
           }
