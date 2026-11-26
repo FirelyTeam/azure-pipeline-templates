@@ -6,6 +6,8 @@
 # line). Only the file's path is exposed, as the `changedFilesPath` output variable: a large diff
 # (e.g. a release merge) stored as a variable becomes an environment variable over Linux's 128 KB
 # limit, and every later step in the job then fails with "Argument list too long".
+# The file lives in Agent.TempDirectory, which is cleaned after every job, so changedFilesPath
+# only works for steps in the same job.
 # Shared by check-skip-stage.yml and checkRequiredFileChanges.yml so the PR-vs-branch-build
 # diffing logic lives in exactly one place. Requires a preceding
 # `checkout: self` with `fetchDepth: 0` in the same job (a shallow clone can't diff against the
@@ -40,8 +42,8 @@ steps:
     }
 
     Write-Host "##[group]Changed files"
-    # Indented so a file name starting with '##vso[' is not read as a logging command.
-    $changedFiles | ForEach-Object { Write-Host "  $_" }
+    # The agent runs logging commands found anywhere in a line, so break up '##vso[' in file names.
+    $changedFiles | ForEach-Object { Write-Host ($_ -replace '##vso\[', '##vso_[') }
     Write-Host "##[endgroup]"
 
     $path = Join-Path $env:AGENT_TEMPDIRECTORY 'changedFiles-${{ parameters.name }}.txt'

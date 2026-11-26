@@ -99,7 +99,8 @@ stages:
             }
           }
           if (-not $matched) {
-            Write-Host "File '$file' does not match any ignore pattern; build will run."
+            $safeFile = $file -replace '##vso\[', '##vso_['
+            Write-Host "File '$safeFile' does not match any ignore pattern; build will run."
             $skip = 'false'
             break
           }
