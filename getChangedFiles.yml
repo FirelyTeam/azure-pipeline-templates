@@ -2,9 +2,12 @@
 # File: getChangedFiles.yml
 #
 # Reusable step that computes the list of changed files for the current build - diffing against the
-# PR target branch, or HEAD~1 for a plain branch build - and exposes it as a semicolon-separated
-# output variable. Shared by check-skip-stage.yml and checkRequiredFileChanges.yml so the
-# PR-vs-branch-build diffing logic lives in exactly one place. Requires a preceding
+# PR target branch, or HEAD~1 for a plain branch build - and writes it to a file (one path per
+# line). Only the file's path is exposed, as the `changedFilesPath` output variable: a large diff
+# (e.g. a release merge) stored as a variable becomes an environment variable over Linux's 128 KB
+# limit, and every later step in the job then fails with "Argument list too long".
+# Shared by check-skip-stage.yml and checkRequiredFileChanges.yml so the PR-vs-branch-build
+# diffing logic lives in exactly one place. Requires a preceding
 # `checkout: self` with `fetchDepth: 0` in the same job (a shallow clone can't diff against the
 # target branch or HEAD~1).
 #
@@ -14,13 +17,13 @@
 #       name: getChangedFiles
 #
 #   - powershell: |
-#       $changedFiles = "$(getChangedFiles.changedFiles)" -split ';' | Where-Object { $_ }
+#       $changedFiles = @(Get-Content -LiteralPath "$(getChangedFiles.changedFilesPath)" -Encoding UTF8 | Where-Object { $_ })
 
 parameters:
 - name: name
   type: string
   default: 'getChangedFiles'
-  displayName: 'Step name, used to reference the changedFiles output variable'
+  displayName: 'Step name, used to reference the changedFilesPath output variable'
 
 steps:
 - powershell: |
@@ -37,10 +40,13 @@ steps:
     }
 
     Write-Host "##[group]Changed files"
-    $changedFiles | ForEach-Object { Write-Host $_ }
+    # Indented so a file name starting with '##vso[' is not read as a logging command.
+    $changedFiles | ForEach-Object { Write-Host "  $_" }
     Write-Host "##[endgroup]"
 
-    $joined = $changedFiles -join ';'
-    Write-Host "##vso[task.setvariable variable=changedFiles;isOutput=true]$joined"
+    $path = Join-Path $env:AGENT_TEMPDIRECTORY 'changedFiles-${{ parameters.name }}.txt'
+    [System.IO.File]::WriteAllLines($path, [string[]]$changedFiles)
+    Write-Host "Wrote $($changedFiles.Count) changed file(s) to $path"
+    Write-Host "##vso[task.setvariable variable=changedFilesPath;isOutput=true]$path"
   name: ${{ parameters.name }}
   displayName: 'Get changed files'

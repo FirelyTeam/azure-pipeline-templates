@@ -81,7 +81,7 @@ stages:
         $patterns | ForEach-Object { Write-Host $_ }
         Write-Host "##[endgroup]"
 
-        $changedFiles = @("$(getChangedFiles.changedFiles)" -split ';' | Where-Object { $_ })
+        $changedFiles = @(Get-Content -LiteralPath "$(getChangedFiles.changedFilesPath)" -Encoding UTF8 | Where-Object { $_ })
 
         if (-not $changedFiles) {
           Write-Host "No changed files detected; not skipping."
